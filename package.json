@@ -1,0 +1,32 @@
+{
+  "name": "resignal-backend",
+  "version": "1.0.0",
+  "description": "Resignal iOS App backend",
+  "main": "index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/remlostime/Resignal-backend.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/remlostime/Resignal-backend/issues"
+  },
+  "homepage": "https://github.com/remlostime/Resignal-backend#readme",
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "fastify": "^5.7.1"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.10",
+    "@vercel/node": "^4.0.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}
