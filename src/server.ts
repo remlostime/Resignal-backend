@@ -1,4 +1,4 @@
-import fastify, { FastifyInstance } from 'fastify';
+import fastify, { type FastifyInstance } from 'fastify';
 
 const createServer = (): FastifyInstance => {
   const server = fastify({
