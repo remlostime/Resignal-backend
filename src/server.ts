@@ -1,22 +1,32 @@
-import fastify, { type FastifyInstance } from 'fastify';
+import fastify from 'fastify';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const createServer = async (): Promise<FastifyInstance> => {
-  const server = fastify({ logger: true });
+// 创建 Fastify 实例
+const app = fastify({ logger: true });
 
+// 注册路由
+const registerRoutes = async () => {
   // 健康检查
-  server.get('/health', async () => {
+  app.get('/health', async () => {
     return { status: 'ok', timestamp: new Date().toISOString() };
   });
 
-  // 动态导入 chat 路由
+  // Chat 路由
   const chatModule = await import(join(__dirname, 'routes', 'api', 'chat.js'));
-  await server.register(chatModule.default, { prefix: '/api/chat' });
-
-  return server;
+  await app.register(chatModule.default, { prefix: '/api/chat' });
 };
 
-export default createServer;
+// 立即注册路由
+await registerRoutes();
+
+// 导出 app 供本地开发使用
+export { app };
+
+// Vercel Serverless 入口（生产环境）
+export default async (req: any, res: any) => {
+  await app.ready();
+  app.server.emit('request', req, res);
+};
