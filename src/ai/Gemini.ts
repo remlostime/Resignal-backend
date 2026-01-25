@@ -1,4 +1,4 @@
-import type { AIProvider, AIRequest, AIResponse } from "./AIProvider"
+import type { AIProvider, AIRequest, AIResponse } from "./AIProvider.js"
 
 export class GeminiProvider implements AIProvider {
   name = "gemini"

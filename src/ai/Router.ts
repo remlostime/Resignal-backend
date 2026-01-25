@@ -1,6 +1,6 @@
-import { type AIProvider, type AIRequest } from "./AIProvider"
-import { GeminiProvider } from "./Gemini"
-import { DeepSeekProvider } from "./DeepSeek"
+import { type AIProvider, type AIRequest } from "./AIProvider.js"
+import { GeminiProvider } from "./Gemini.js"
+import { DeepSeekProvider } from "./DeepSeek.js"
 
 export class ModelRouter {
   private providers: Record<string, AIProvider>

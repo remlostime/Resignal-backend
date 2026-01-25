@@ -1,5 +1,5 @@
 import { type FastifyPluginAsync } from 'fastify';
-import { ModelRouter } from "../../ai/Router";
+import { ModelRouter } from "../../ai/Router.js";
 
 const chatRoutes: FastifyPluginAsync = async (server) => {
   const router = new ModelRouter();
