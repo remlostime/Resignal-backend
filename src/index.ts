@@ -1,7 +1,7 @@
 import createServer from './server.js';
 
 const start = async () => {
-  const server = createServer();
+  const server = await createServer(); // 加 await
   
   try {
     await server.listen({ port: 3000, host: '0.0.0.0' });
@@ -12,9 +12,6 @@ const start = async () => {
   }
 };
 
-// 简单判断：如果没有被 import，而是直接运行
-if (process.argv[1]?.includes('index.ts')) {
+if (process.argv[1]?.includes('index.ts') || process.argv[1]?.includes('index.js')) {
   start();
 }
-
-export default createServer;
