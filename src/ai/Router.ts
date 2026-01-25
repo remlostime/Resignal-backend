@@ -1,4 +1,4 @@
-import { AIProvider, AIRequest } from "./AIProvider"
+import { type AIProvider, type AIRequest } from "./AIProvider"
 import { GeminiProvider } from "./Gemini"
 import { DeepSeekProvider } from "./DeepSeek"
 

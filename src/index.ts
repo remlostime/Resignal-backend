@@ -1,4 +1,4 @@
-import createServer from './server';
+import createServer from './server.js';
 
 const start = async () => {
   const server = createServer();
@@ -12,8 +12,8 @@ const start = async () => {
   }
 };
 
-// 仅在直接运行时启动（非 Vercel 环境）
-if (require.main === module) {
+// 简单判断：如果没有被 import，而是直接运行
+if (process.argv[1]?.includes('index.ts')) {
   start();
 }
 
