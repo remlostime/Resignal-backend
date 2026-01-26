@@ -1,12 +1,24 @@
+import { GoogleGenerativeAI } from "@google/generative-ai"
 import type { AIProvider, AIRequest, AIResponse } from "./AIProvider.js"
+import { buildPrompt } from "../prompt/interview.js"
 
 export class GeminiProvider implements AIProvider {
   name = "gemini"
+  private model
+
+  constructor() {
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
+    this.model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" })
+  }
 
   async chat(req: AIRequest): Promise<AIResponse> {
-    // 这里先 mock，后面你接官方 SDK
+    const prompt = buildPrompt(req)
+
+    const result = await this.model.generateContent(prompt)
+    const text = result.response.text()
+
     return {
-      output: `【Gemini】回答：${req.input}`
+      output: text
     }
   }
 }

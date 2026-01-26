@@ -13,11 +13,8 @@ export class ModelRouter {
   }
 
   getProvider(task: AIRequest["task"]): AIProvider {
-    // 👇 你以后改策略，只动这里
-    if (task === "mock_interview") {
-      return this.providers["gemini"]
-    }
+    const defaultProvider = process.env.DEFAULT_MODEL || "gemini";
 
-    return this.providers["deepseek"]
+    return this.providers[defaultProvider];
   }
 }
