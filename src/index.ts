@@ -1,4 +1,7 @@
-import { app } from './server.js';
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });  // 明确指定文件
+
+const { app } = await import('./server.js');
 
 const start = async () => {
   try {

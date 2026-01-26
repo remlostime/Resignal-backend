@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import type { AIProvider, AIRequest, AIResponse } from "./AIProvider.js"
-import { buildPrompt } from "../prompt/interview"
+import { buildPrompt } from "../prompt/interview.js"
 
 export class GeminiProvider implements AIProvider {
   name = "gemini"
@@ -8,7 +8,7 @@ export class GeminiProvider implements AIProvider {
 
   constructor() {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
-    this.model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" })
+    this.model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" })
   }
 
   async chat(req: AIRequest): Promise<AIResponse> {
