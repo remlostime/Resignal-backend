@@ -23,7 +23,9 @@
   "homepage": "https://github.com/remlostime/Resignal-backend#readme",
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
-    "fastify": "^5.7.1"
+    "@neondatabase/serverless": "^1.0.2",
+    "fastify": "^5.7.1",
+    "vercel": "^50.9.5"
   },
   "devDependencies": {
     "@types/node": "^25.0.10",
