@@ -5,7 +5,13 @@ export class DeepSeekProvider implements AIProvider {
 
   async chat(req: AIRequest): Promise<AIResponse> {
     return {
-      output: `【DeepSeek】回答：${req.input}`
+      output: {
+        summary: `DeepSeek placeholder for: ${req.input}`,
+        strengths: [],
+        improvement: [],
+        hiring_signal: "N/A",
+        key_observations: []
+      }
     }
   }
 }
