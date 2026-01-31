@@ -24,6 +24,7 @@ Return your response strictly in valid JSON.
 
 Schema:
 {
+  "title": string,
   "summary": string,
   "strengths": string[],
   "improvement": string[],
@@ -33,23 +34,29 @@ Schema:
 
 In each JSON key, please follow the following guidelines to generate the content:
 
-1. summary  
+1. title
+- Generate a concise, descriptive title for this interview feedback.
+- Include the interview type (e.g., technical, behavioral, system design), role/position, and company name if mentioned in the transcript.
+- If details are not explicitly stated, infer from context or use a generic description.
+- Example: "Google Software Engineer Technical Interview" or "Backend Developer System Design Round"
+
+2. summary  
 - Provide a concise, high-level summary of the interview.
 - Focus on what was discussed and how the candidate generally performed.
 
-2. strengths
-- List the candidate’s main strengths demonstrated during the interview.
+3. strengths
+- List the candidate's main strengths demonstrated during the interview.
 - Be specific and reference observable behaviors (e.g., problem-solving approach, communication clarity, technical reasoning).
 
-3. improvement
+4. improvement
 - Identify weaknesses, gaps, or unclear areas.
 - If certain skills were not sufficiently demonstrated, state that explicitly.
 
-4. hiring_signal 
+5. hiring_signal 
 - Evaluate the overall hiring signal (e.g., Strong Hire / Hire / Lean Hire / Lean No Hire / No Hire).
 - Briefly justify the assessment using evidence from the transcript.
 
-5. key_observations 
+6. key_observations 
 - Provide concrete, constructive feedback the candidate could use to improve future interview performance.
 - Focus on skills, preparation, and communication rather than personal traits.
 

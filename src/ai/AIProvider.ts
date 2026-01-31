@@ -5,6 +5,7 @@ export interface AIRequest {
 }
 
 export interface FeedbackResponse {
+  title: string
   summary: string
   strengths: string[]
   improvement: string[]
