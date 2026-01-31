@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai"
-import type { AIProvider, AIRequest, AIResponse } from "./AIProvider.js"
+import type { AIProvider, AIRequest, AIResponse, FeedbackResponse } from "./AIProvider.js"
 import { buildPrompt } from "../prompt/interview.js"
 
 export class GeminiProvider implements AIProvider {
@@ -17,8 +17,10 @@ export class GeminiProvider implements AIProvider {
     const result = await this.model.generateContent(prompt)
     const text = result.response.text()
 
+    const parsed: FeedbackResponse = JSON.parse(text)
+
     return {
-      output: text
+      output: parsed
     }
   }
 }
