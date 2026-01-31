@@ -19,27 +19,37 @@ INPUT:
 "${req.input}"
 </INTERVIEW_TRANSCRIPT>
 
-OUTPUT REQUIREMENTS:
+OUTPUT:
+Return your response strictly in valid JSON.
 
-Please generate the following sections in English:
+Schema:
+{
+  "summary": string,
+  "strengths": string[],
+  "improvement": string[],
+  "hiring_signal": string,
+  "key_observations": string[]
+}
 
-1. Interview Summary  
+In each JSON key, please follow the following guidelines to generate the content:
+
+1. summary  
 - Provide a concise, high-level summary of the interview.
 - Focus on what was discussed and how the candidate generally performed.
 
-2. Key Strengths  
+2. strengths
 - List the candidate’s main strengths demonstrated during the interview.
 - Be specific and reference observable behaviors (e.g., problem-solving approach, communication clarity, technical reasoning).
 
-3. Areas for Improvement  
+3. improvement
 - Identify weaknesses, gaps, or unclear areas.
 - If certain skills were not sufficiently demonstrated, state that explicitly.
 
-4. Hiring Signal Assessment  
+4. hiring_signal 
 - Evaluate the overall hiring signal (e.g., Strong Hire / Hire / Lean Hire / Lean No Hire / No Hire).
 - Briefly justify the assessment using evidence from the transcript.
 
-5. Actionable Feedback for the Candidate  
+5. key_observations 
 - Provide concrete, constructive feedback the candidate could use to improve future interview performance.
 - Focus on skills, preparation, and communication rather than personal traits.
 

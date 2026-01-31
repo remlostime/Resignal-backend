@@ -1,6 +1,7 @@
 import fastify from 'fastify';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
+import neonPlugin from './plugins/neon.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -17,6 +18,7 @@ const registerRoutes = async () => {
   // Chat 路由
   const chatModule = await import(join(__dirname, 'routes', 'api', 'chat.js'));
   await app.register(chatModule.default, { prefix: '/api/chat' });
+  await app.register(neonPlugin, { prefix: '/db' });
 };
 
 // 立即注册路由
@@ -30,3 +32,5 @@ export default async (req: any, res: any) => {
   await app.ready();
   app.server.emit('request', req, res);
 };
+
+console.log(app.printRoutes());
