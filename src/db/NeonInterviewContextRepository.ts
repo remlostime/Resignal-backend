@@ -4,7 +4,7 @@ import type { AIModel, InterviewContext } from "./types.js"
 
 interface InterviewContextRow {
   interview_id: string
-  context_json: string
+  context_json: string | any
   model: AIModel
   created_at: string
 }
@@ -12,7 +12,9 @@ interface InterviewContextRow {
 function mapRowToInterviewContext(row: InterviewContextRow): InterviewContext {
   return {
     interviewId: row.interview_id,
-    contextJson: JSON.parse(row.context_json),
+    contextJson: typeof row.context_json === 'string' 
+      ? JSON.parse(row.context_json) 
+      : row.context_json,
     model: row.model,
     createdAt: new Date(row.created_at)
   }
@@ -27,11 +29,10 @@ export class NeonInterviewContextRepository implements InterviewContextRepositor
 
   async createContext(interviewId: string, contextJson: any, model: AIModel): Promise<InterviewContext> {
     const createdAt = new Date()
-    const contextJsonString = JSON.stringify(contextJson)
 
     const rows = await this.sql`
       INSERT INTO interview_contexts (interview_id, context_json, model, created_at)
-      VALUES (${interviewId}, ${contextJsonString}, ${model}, ${createdAt.toISOString()})
+      VALUES (${interviewId}, ${JSON.stringify(contextJson)}::jsonb, ${model}, ${createdAt.toISOString()})
       RETURNING interview_id, context_json, model, created_at;
     `
 
