@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import type { AIProvider, AIRequest, AIResponse, FeedbackResponse } from "./AIProvider.js"
+import type { UserRepository } from "../db/UserRepository.js"
 import { buildPrompt } from "../prompt/interview.js"
 
 const MAX_RETRIES = 3
@@ -41,10 +42,12 @@ async function withRetry<T>(
 export class GeminiProvider implements AIProvider {
   name = "gemini"
   private model
+  private userRepository?: UserRepository
 
-  constructor() {
+  constructor(userRepository?: UserRepository) {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
     this.model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" })
+    this.userRepository = userRepository
   }
 
   async chat(req: AIRequest): Promise<AIResponse> {
