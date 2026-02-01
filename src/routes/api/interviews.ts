@@ -2,7 +2,7 @@ import { type FastifyPluginAsync } from 'fastify';
 import { ModelRouter } from "../../ai/Router.js";
 import { rateLimit } from "../../lib/rateLimit.js";
 
-const chatRoutes: FastifyPluginAsync = async (server) => {
+const interviewRoutes: FastifyPluginAsync = async (server) => {
   const router = new ModelRouter();
 
   server.post("/", async (request, reply) => {
@@ -14,7 +14,7 @@ const chatRoutes: FastifyPluginAsync = async (server) => {
     }
 
     const provider = router.getProvider(task);
-    const result = await provider.chat({ input, task, locale });
+    const result = await provider.interview({ input, task, locale });
 
     return {
       provider: provider.name,
@@ -23,4 +23,4 @@ const chatRoutes: FastifyPluginAsync = async (server) => {
   });
 };
 
-export default chatRoutes;
+export default interviewRoutes;

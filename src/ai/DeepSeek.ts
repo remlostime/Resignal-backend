@@ -3,7 +3,7 @@ import type { AIProvider, AIRequest, AIResponse } from "./AIProvider.js"
 export class DeepSeekProvider implements AIProvider {
   name = "deepseek"
 
-  async chat(req: AIRequest): Promise<AIResponse> {
+  async interview(req: AIRequest): Promise<AIResponse> {
     return {
       output: {
         title: "DeepSeek Placeholder Interview",
