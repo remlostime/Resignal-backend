@@ -15,9 +15,14 @@ const registerRoutes = async () => {
     return { status: 'ok', timestamp: new Date().toISOString() };
   });
 
-  // Chat 路由
-  const chatModule = await import(join(__dirname, 'routes', 'api', 'chat.js'));
-  await app.register(chatModule.default, { prefix: '/api/chat' });
+  // Interview 路由
+  const interviewModule = await import(join(__dirname, 'routes', 'api', 'interviews.js'));
+  await app.register(interviewModule.default, { prefix: '/api/interviews' });
+  
+  // User 路由
+  const usersModule = await import(join(__dirname, 'routes', 'api', 'users.js'));
+  await app.register(usersModule.default, { prefix: '/api/users' });
+  
   await app.register(neonPlugin, { prefix: '/db' });
 };
 

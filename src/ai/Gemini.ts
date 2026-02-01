@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import type { AIProvider, AIRequest, AIResponse, FeedbackResponse } from "./AIProvider.js"
 import type { UserRepository } from "../db/UserRepository.js"
-import { buildPrompt } from "../prompt/interview.js"
+import { buildPrompt } from "../prompt/prompt.js"
 
 const MAX_RETRIES = 3
 const INITIAL_DELAY_MS = 1000
@@ -50,7 +50,7 @@ export class GeminiProvider implements AIProvider {
     this.userRepository = userRepository
   }
 
-  async chat(req: AIRequest): Promise<AIResponse> {
+  async interview(req: AIRequest): Promise<AIResponse> {
     const prompt = buildPrompt(req)
 
     const result = await withRetry(() => this.model.generateContent(prompt))

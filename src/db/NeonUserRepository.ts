@@ -43,6 +43,23 @@ export class NeonUserRepository implements UserRepository {
     return mapRowToUser(rows[0] as UserRow)
   }
 
+  async createUserWithId(id: string, email: string, plan: Plan = "free"): Promise<User | null> {
+    const createdAt = new Date()
+
+    const rows = await this.sql`
+      INSERT INTO users (id, email, plan, created_at)
+      VALUES (${id}, ${email}, ${plan}, ${createdAt.toISOString()})
+      ON CONFLICT DO NOTHING
+      RETURNING id, email, plan, created_at;
+    `
+
+    if (rows.length === 0) {
+      return null
+    }
+
+    return mapRowToUser(rows[0] as UserRow)
+  }
+
   async getUserById(id: string): Promise<User | null> {
     const rows = await this.sql`
       SELECT id, email, plan, created_at

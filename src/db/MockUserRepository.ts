@@ -23,6 +23,24 @@ export class MockUserRepository implements UserRepository {
     return user
   }
 
+  async createUserWithId(id: string, email: string, plan: Plan = "free"): Promise<User | null> {
+    if (this.emailIndex.has(email)) {
+      return null
+    }
+
+    const user: User = {
+      id,
+      email,
+      plan,
+      createdAt: new Date()
+    }
+
+    this.users.set(user.id, user)
+    this.emailIndex.set(email, user.id)
+
+    return user
+  }
+
   async getUserById(id: string): Promise<User | null> {
     return this.users.get(id) ?? null
   }

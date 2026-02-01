@@ -23,5 +23,5 @@ export interface AIResponse {
 
 export interface AIProvider {
   name: string
-  chat(req: AIRequest): Promise<AIResponse>
+  interview(req: AIRequest): Promise<AIResponse>
 }
