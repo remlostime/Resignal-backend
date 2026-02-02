@@ -2,6 +2,7 @@ export interface AIRequest {
   input: string
   task: "mock_interview" | "feedback"
   locale: string
+  userId: string
 }
 
 export interface FeedbackResponse {

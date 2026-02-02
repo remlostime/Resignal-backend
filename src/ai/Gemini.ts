@@ -1,6 +1,8 @@
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import type { AIProvider, AIRequest, AIResponse, FeedbackResponse } from "./AIProvider.js"
 import type { UserRepository } from "../db/UserRepository.js"
+import type { InterviewRepository } from "../db/InterviewRepository.js"
+import type { InterviewContextRepository } from "../db/InterviewContextRepository.js"
 import { buildPrompt } from "../prompt/prompt.js"
 
 const MAX_RETRIES = 3
@@ -43,14 +45,29 @@ export class GeminiProvider implements AIProvider {
   name = "gemini"
   private model
   private userRepository?: UserRepository
+  private interviewRepository?: InterviewRepository
+  private contextRepository?: InterviewContextRepository
 
-  constructor(userRepository?: UserRepository) {
+  constructor(
+    userRepository?: UserRepository, 
+    interviewRepository?: InterviewRepository,
+    contextRepository?: InterviewContextRepository
+  ) {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
     this.model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" })
     this.userRepository = userRepository
+    this.interviewRepository = interviewRepository
+    this.contextRepository = contextRepository
   }
 
   async interview(req: AIRequest): Promise<AIResponse> {
+    // Create interview record before calling AI
+    let interviewId: string | undefined
+    if (this.interviewRepository) {
+      const interview = await this.interviewRepository.createInterview(req.userId, req.input)
+      interviewId = interview.id
+    }
+
     const prompt = buildPrompt(req)
 
     const result = await withRetry(() => this.model.generateContent(prompt))
@@ -60,6 +77,11 @@ export class GeminiProvider implements AIProvider {
     text = text.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim()
 
     const parsed: FeedbackResponse = JSON.parse(text)
+
+    // Store AI response in context table
+    if (this.contextRepository && interviewId) {
+      await this.contextRepository.createContext(interviewId, parsed, "gemini-3-flash-preview")
+    }
 
     return {
       output: parsed

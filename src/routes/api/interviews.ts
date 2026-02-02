@@ -14,7 +14,7 @@ const interviewRoutes: FastifyPluginAsync = async (server) => {
     }
 
     const provider = router.getProvider(task);
-    const result = await provider.interview({ input, task, locale });
+    const result = await provider.interview({ input, task, locale, userId: clientId });
 
     return {
       provider: provider.name,
