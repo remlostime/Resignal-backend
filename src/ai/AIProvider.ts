@@ -22,7 +22,19 @@ export interface AIResponse {
   }
 }
 
+export interface ChatRequest {
+  interviewId: string
+  message: string
+  userId: string
+}
+
+export interface ChatResponse {
+  reply: string
+  messageId?: string
+}
+
 export interface AIProvider {
   name: string
   interview(req: AIRequest): Promise<AIResponse>
+  chat(req: ChatRequest): Promise<ChatResponse>
 }

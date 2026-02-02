@@ -23,6 +23,10 @@ const registerRoutes = async () => {
   const usersModule = await import(join(__dirname, 'routes', 'api', 'users.js'));
   await app.register(usersModule.default, { prefix: '/api/users' });
   
+  // Message 路由
+  const messagesModule = await import(join(__dirname, 'routes', 'api', 'messages.js'));
+  await app.register(messagesModule.default, { prefix: '/api/messages' });
+  
   await app.register(neonPlugin, { prefix: '/db' });
 };
 
