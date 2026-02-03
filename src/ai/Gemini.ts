@@ -1,10 +1,11 @@
 import { GoogleGenerativeAI } from "@google/generative-ai"
-import type { AIProvider, AIRequest, AIResponse, FeedbackResponse, ChatRequest, ChatResponse } from "./AIProvider.js"
+import type { AIProvider, AIRequest, AIResponse, ChatRequest, ChatResponse } from "./AIProvider.js"
 import type { UserRepository } from "../db/UserRepository.js"
 import type { InterviewRepository } from "../db/InterviewRepository.js"
 import type { InterviewContextRepository } from "../db/InterviewContextRepository.js"
 import type { InterviewMessageRepository } from "../db/InterviewMessageRepository.js"
 import { buildPrompt } from "../prompt/prompt.js"
+import { parseFeedbackResponse } from "./responseValidator.js"
 
 const MAX_RETRIES = 3
 const INITIAL_DELAY_MS = 1000
@@ -80,7 +81,7 @@ export class GeminiProvider implements AIProvider {
     // Strip markdown code fences if present
     text = text.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim()
 
-    const parsed: FeedbackResponse = JSON.parse(text)
+    const parsed = parseFeedbackResponse(JSON.parse(text))
 
     // Store AI response in context table
     if (this.contextRepository && interviewId) {
