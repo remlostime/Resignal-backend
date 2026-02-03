@@ -16,6 +16,7 @@ export interface FeedbackResponse {
 
 export interface AIResponse {
   output: FeedbackResponse
+  interviewId?: string
   usage?: {
     inputTokens?: number
     outputTokens?: number

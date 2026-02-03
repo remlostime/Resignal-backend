@@ -88,7 +88,8 @@ export class GeminiProvider implements AIProvider {
     }
 
     return {
-      output: parsed
+      output: parsed,
+      interviewId
     }
   }
 

@@ -21,6 +21,7 @@ const interviewRoutes: FastifyPluginAsync = async (server) => {
 
     return {
       provider: provider.name,
+      interview_id: result.interviewId,
       reply: result.output
     };
   });
