@@ -6,7 +6,7 @@ import { NeonInterviewMessageRepository } from '../../db/NeonInterviewMessageRep
 import type { ImageAttachment } from '../../ai/AIProvider.js';
 
 const ALLOWED_IMAGE_MIME_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
-const MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024; // 2MB
+const MAX_IMAGE_SIZE_BYTES = 3 * 1024 * 1024; // 3MB
 
 function validateImage(image: { base64: string; mimeType: string }): { valid: boolean; error?: string } {
   // Validate mime type
@@ -23,7 +23,7 @@ function validateImage(image: { base64: string; mimeType: string }): { valid: bo
     if (buffer.length > MAX_IMAGE_SIZE_BYTES) {
       return { 
         valid: false, 
-        error: `Image size exceeds maximum allowed size of 2MB` 
+        error: `Image size exceeds maximum allowed size of 3MB` 
       };
     }
   } catch {
