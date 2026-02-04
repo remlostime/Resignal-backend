@@ -6,7 +6,10 @@ import neonPlugin from './plugins/neon.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // 创建 Fastify 实例
-const app = fastify({ logger: true });
+const app = fastify({ 
+  logger: true,
+  bodyLimit: 5 * 1024 * 1024  // 5MB limit to accommodate 3MB images + base64 overhead
+});
 
 // 注册路由
 const registerRoutes = async () => {

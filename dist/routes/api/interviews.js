@@ -3,7 +3,7 @@ import { ModelRouter } from "../../ai/Router.js";
 import { rateLimit } from "../../lib/rateLimit.js";
 import { NeonInterviewMessageRepository } from '../../db/NeonInterviewMessageRepository.js';
 const ALLOWED_IMAGE_MIME_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
-const MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024; // 2MB
+const MAX_IMAGE_SIZE_BYTES = 3 * 1024 * 1024; // 3MB
 function validateImage(image) {
     // Validate mime type
     if (!ALLOWED_IMAGE_MIME_TYPES.includes(image.mimeType)) {
@@ -18,7 +18,7 @@ function validateImage(image) {
         if (buffer.length > MAX_IMAGE_SIZE_BYTES) {
             return {
                 valid: false,
-                error: `Image size exceeds maximum allowed size of 2MB`
+                error: `Image size exceeds maximum allowed size of 3MB`
             };
         }
     }
