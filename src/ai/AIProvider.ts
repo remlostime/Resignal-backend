@@ -5,7 +5,6 @@ export interface ImageAttachment {
 
 export interface AIRequest {
   input: string
-  task: "mock_interview" | "feedback"
   locale: string
   userId: string
   image?: ImageAttachment     // Optional single image

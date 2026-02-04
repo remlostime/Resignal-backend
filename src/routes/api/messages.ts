@@ -20,7 +20,7 @@ const messageRoutes: FastifyPluginAsync = async (server) => {
     }
 
     try {
-      const provider = router.getProvider('mock_interview');
+      const provider = router.getProvider();
       const result = await provider.chat({
         interviewId: interview_id,
         message,
