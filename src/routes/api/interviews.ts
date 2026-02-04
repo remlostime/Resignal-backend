@@ -3,21 +3,69 @@ import { ModelRouter } from "../../ai/Router.js";
 import { rateLimit } from "../../lib/rateLimit.js";
 import type { InterviewMessageRepository } from '../../db/InterviewMessageRepository.js';
 import { NeonInterviewMessageRepository } from '../../db/NeonInterviewMessageRepository.js';
+import type { ImageAttachment } from '../../ai/AIProvider.js';
+
+const ALLOWED_IMAGE_MIME_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
+const MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024; // 2MB
+
+function validateImage(image: { base64: string; mimeType: string }): { valid: boolean; error?: string } {
+  // Validate mime type
+  if (!ALLOWED_IMAGE_MIME_TYPES.includes(image.mimeType)) {
+    return { 
+      valid: false, 
+      error: `Invalid image type. Allowed types: ${ALLOWED_IMAGE_MIME_TYPES.join(', ')}` 
+    };
+  }
+
+  // Validate size (decode base64 to check actual size)
+  try {
+    const buffer = Buffer.from(image.base64, 'base64');
+    if (buffer.length > MAX_IMAGE_SIZE_BYTES) {
+      return { 
+        valid: false, 
+        error: `Image size exceeds maximum allowed size of 2MB` 
+      };
+    }
+  } catch {
+    return { valid: false, error: 'Invalid base64 encoding' };
+  }
+
+  return { valid: true };
+}
 
 const interviewRoutes: FastifyPluginAsync = async (server) => {
   const router = new ModelRouter();
   const messageRepository: InterviewMessageRepository = new NeonInterviewMessageRepository();
 
   server.post("/", async (request, reply) => {
-    const { input, task, locale } = request.body as any;
+    const { input, locale, image } = request.body as {
+      input: string;
+      locale: string;
+      image?: { base64: string; mimeType: string };
+    };
     const clientId = request.headers['x-client-id'] as string;
 
     if (!clientId || !rateLimit(clientId)) {
       return reply.status(429).send({ error: 'Rate limit exceeded' });
     }
 
-    const provider = router.getProvider(task);
-    const result = await provider.interview({ input, task, locale, userId: clientId });
+    // Validate image if provided
+    let validatedImage: ImageAttachment | undefined;
+    if (image) {
+      const validation = validateImage(image);
+      if (!validation.valid) {
+        return reply.status(400).send({ error: validation.error });
+      }
+      validatedImage = image;
+    }
+
+    const provider = router.getProvider();
+    const result = await provider.interview({ 
+      input, 
+      locale, 
+      userId: clientId,
+      image: validatedImage
+    });
 
     return {
       provider: provider.name,

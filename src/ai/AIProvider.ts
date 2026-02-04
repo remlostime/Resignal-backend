@@ -1,8 +1,13 @@
+export interface ImageAttachment {
+  base64: string              // Base64-encoded image data
+  mimeType: string            // "image/png", "image/jpeg", "image/gif", "image/webp"
+}
+
 export interface AIRequest {
   input: string
-  task: "mock_interview" | "feedback"
   locale: string
   userId: string
+  image?: ImageAttachment     // Optional single image
 }
 
 export interface FeedbackResponse {

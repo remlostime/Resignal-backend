@@ -19,7 +19,7 @@ export class ModelRouter {
     }
   }
 
-  getProvider(task: AIRequest["task"]): AIProvider {
+  getProvider(): AIProvider {
     const defaultProvider = process.env.DEFAULT_MODEL || "gemini";
 
     return this.providers[defaultProvider];

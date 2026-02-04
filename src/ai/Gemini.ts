@@ -75,7 +75,18 @@ export class GeminiProvider implements AIProvider {
 
     const prompt = buildPrompt(req)
 
-    const result = await withRetry(() => this.model.generateContent(prompt))
+    // Build content based on whether image is provided
+    let result
+    if (req.image) {
+      // Multimodal content with text and image
+      result = await withRetry(() => this.model.generateContent([
+        { text: prompt },
+        { inlineData: { mimeType: req.image!.mimeType, data: req.image!.base64 } }
+      ]))
+    } else {
+      // Text-only content
+      result = await withRetry(() => this.model.generateContent(prompt))
+    }
     let text = result.response.text()
 
     // Strip markdown code fences if present
