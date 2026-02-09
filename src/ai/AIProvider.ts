@@ -28,6 +28,8 @@ export interface AIResponse {
   }
 }
 
+export type QuestionCategory = "global" | "targeted" | "specific"
+
 export interface ChatRequest {
   interviewId: string
   message: string
@@ -43,4 +45,5 @@ export interface AIProvider {
   name: string
   interview(req: AIRequest): Promise<AIResponse>
   chat(req: ChatRequest): Promise<ChatResponse>
+  classify(message: string): Promise<QuestionCategory>
 }
