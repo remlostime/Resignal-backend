@@ -109,6 +109,8 @@ export class GeminiProvider implements AIProvider {
   }
 
   async chat(req: ChatRequest): Promise<ChatResponse> {
+    console.log(`[chat] Received message for interview ${req.interviewId}: "${req.message}"`)
+
     // Store user message
     if (this.messageRepository) {
       await this.messageRepository.createMessage(req.interviewId, "user", req.message)
@@ -116,31 +118,37 @@ export class GeminiProvider implements AIProvider {
 
     // Classify the question to determine context needs
     const category = await this.classify(req.message)
+    console.log(`[chat] Question classified as "${category}" for: "${req.message}"`)
 
     // Fetch interview context (needed for all categories)
     const interviewContext = this.contextRepository
       ? await this.contextRepository.getContextByInterviewId(req.interviewId)
       : null
+    console.log(`[chat] Interview context ${interviewContext ? "found" : "not found"} for interview ${req.interviewId}`)
 
     // For "specific" questions, also fetch the full transcript
     let transcript: string | undefined
     if (category === "specific" && this.interviewRepository) {
       const interview = await this.interviewRepository.getInterviewById(req.interviewId)
       transcript = interview?.transcript
+      console.log(`[chat] Transcript ${transcript ? `loaded (${transcript.length} chars)` : "not found"} for specific question`)
     }
 
     // Build the enriched prompt with appropriate context
     let prompt: string
     if (interviewContext) {
       prompt = buildChatPrompt(req.message, interviewContext, transcript)
+      console.log(`[chat] Built enriched prompt with context${transcript ? " + transcript" : ""} (${prompt.length} chars)`)
     } else {
       // Fallback: send raw message if no context is available
       prompt = req.message
+      console.log(`[chat] No context available, using raw message as prompt`)
     }
 
     // Call AI with the context-enriched prompt
     const result = await withRetry(() => this.model.generateContent(prompt))
     const reply = result.response.text()
+    console.log(`[chat] AI reply received (${reply.length} chars)`)
 
     // Store AI response
     let messageId: string | undefined
