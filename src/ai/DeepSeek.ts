@@ -1,4 +1,4 @@
-import type { AIProvider, AIRequest, AIResponse, ChatRequest, ChatResponse } from "./AIProvider.js"
+import type { AIProvider, AIRequest, AIResponse, ChatRequest, ChatResponse, QuestionCategory } from "./AIProvider.js"
 
 export class DeepSeekProvider implements AIProvider {
   name = "deepseek"
@@ -20,5 +20,9 @@ export class DeepSeekProvider implements AIProvider {
     return {
       reply: `DeepSeek placeholder reply for: ${req.message}`
     }
+  }
+
+  async classify(message: string): Promise<QuestionCategory> {
+    return "specific"
   }
 }
