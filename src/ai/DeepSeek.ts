@@ -75,6 +75,7 @@ export class DeepSeekProvider implements AIProvider {
   }
 
   async interview(req: AIRequest): Promise<AIResponse> {
+    console.log(`[interview] Using model: deepseek (${DEEPSEEK_MODEL})`)
     // Create interview record before calling AI
     let interviewId: string | undefined
     if (this.interviewRepository) {
@@ -123,6 +124,7 @@ export class DeepSeekProvider implements AIProvider {
   }
 
   async chat(req: ChatRequest): Promise<ChatResponse> {
+    console.log(`[chat] Using model: deepseek (${DEEPSEEK_MODEL})`)
     console.log(`[chat] Received message for interview ${req.interviewId}: "${req.message}"`)
 
     // Store user message
@@ -183,6 +185,7 @@ export class DeepSeekProvider implements AIProvider {
   }
 
   async classify(message: string): Promise<QuestionCategory> {
+    console.log(`[classify] Using model: deepseek (${DEEPSEEK_MODEL})`)
     const prompt = buildClassificationPrompt(message)
 
     try {
