@@ -15,7 +15,7 @@ export class ModelRouter {
     
     this.providers = {
       gemini: new GeminiProvider(undefined, interviewRepository, contextRepository, messageRepository),
-      deepseek: new DeepSeekProvider()
+      deepseek: new DeepSeekProvider(undefined, interviewRepository, contextRepository, messageRepository)
     }
   }
 
