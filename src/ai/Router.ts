@@ -1,6 +1,7 @@
 import { type AIProvider, type AIRequest } from "./AIProvider.js"
 import { GeminiProvider } from "./Gemini.js"
 import { DeepSeekProvider } from "./DeepSeek.js"
+import { OpenAIProvider } from "./OpenAI.js"
 import { NeonInterviewRepository } from "../db/NeonInterviewRepository.js"
 import { NeonInterviewContextRepository } from "../db/NeonInterviewContextRepository.js"
 import { NeonInterviewMessageRepository } from "../db/NeonInterviewMessageRepository.js"
@@ -15,7 +16,8 @@ export class ModelRouter {
     
     this.providers = {
       gemini: new GeminiProvider(undefined, interviewRepository, contextRepository, messageRepository),
-      deepseek: new DeepSeekProvider(undefined, interviewRepository, contextRepository, messageRepository)
+      deepseek: new DeepSeekProvider(undefined, interviewRepository, contextRepository, messageRepository),
+      openai: new OpenAIProvider(undefined, interviewRepository, contextRepository, messageRepository)
     }
   }
 
