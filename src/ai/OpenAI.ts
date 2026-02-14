@@ -1,4 +1,4 @@
-import OpenAI from "openai"
+import { OpenAI } from "openai"
 import type { ChatCompletionContentPart } from "openai/resources/chat/completions.js"
 import type { AIProvider, AIRequest, AIResponse, ChatRequest, ChatResponse, QuestionCategory } from "./AIProvider.js"
 import type { UserRepository } from "../db/UserRepository.js"

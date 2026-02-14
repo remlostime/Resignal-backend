@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+import { OpenAI } from "openai";
 import { buildPrompt, buildClassificationPrompt, buildChatPrompt } from "../prompt/prompt.js";
 import { parseFeedbackResponse } from "./responseValidator.js";
 const DEEPSEEK_MODEL = "deepseek-chat";
