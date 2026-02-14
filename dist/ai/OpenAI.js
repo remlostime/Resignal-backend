@@ -1,6 +1,7 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import OpenAI from "openai";
 import { buildPrompt, buildClassificationPrompt, buildChatPrompt } from "../prompt/prompt.js";
 import { parseFeedbackResponse } from "./responseValidator.js";
+const OPENAI_MODEL = "gpt-5.2";
 const MAX_RETRIES = 3;
 const INITIAL_DELAY_MS = 1000;
 async function sleep(ms) {
@@ -16,7 +17,9 @@ async function withRetry(fn, maxRetries = MAX_RETRIES, initialDelay = INITIAL_DE
             lastError = error;
             const isRetryable = lastError.message?.includes('503') ||
                 lastError.message?.includes('overloaded') ||
-                lastError.message?.includes('Service Unavailable');
+                lastError.message?.includes('Service Unavailable') ||
+                lastError.message?.includes('429') ||
+                lastError.message?.includes('Rate limit');
             if (!isRetryable || attempt === maxRetries) {
                 throw lastError;
             }
@@ -29,23 +32,24 @@ async function withRetry(fn, maxRetries = MAX_RETRIES, initialDelay = INITIAL_DE
 }
 const VALID_CATEGORIES = ["global", "targeted", "specific"];
 const DEFAULT_CATEGORY = "specific";
-export class GeminiProvider {
-    name = "gemini";
-    model;
+export class OpenAIProvider {
+    name = "openai";
+    client;
     userRepository;
     interviewRepository;
     contextRepository;
     messageRepository;
     constructor(userRepository, interviewRepository, contextRepository, messageRepository) {
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        this.model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+        this.client = new OpenAI({
+            apiKey: process.env.OPENAI_API_KEY
+        });
         this.userRepository = userRepository;
         this.interviewRepository = interviewRepository;
         this.contextRepository = contextRepository;
         this.messageRepository = messageRepository;
     }
     async interview(req) {
-        console.log(`[interview] Using model: gemini (gemini-3-flash-preview)`);
+        console.log(`[interview] Using model: openai (${OPENAI_MODEL})`);
         // Create interview record before calling AI
         let interviewId;
         if (this.interviewRepository) {
@@ -54,25 +58,29 @@ export class GeminiProvider {
         }
         const prompt = buildPrompt(req);
         // Build content based on whether image is provided
-        let result;
+        let content;
         if (req.image) {
             // Multimodal content with text and image
-            result = await withRetry(() => this.model.generateContent([
-                { text: prompt },
-                { inlineData: { mimeType: req.image.mimeType, data: req.image.base64 } }
-            ]));
+            content = [
+                { type: "text", text: prompt },
+                { type: "image_url", image_url: { url: `data:${req.image.mimeType};base64,${req.image.base64}` } }
+            ];
         }
         else {
             // Text-only content
-            result = await withRetry(() => this.model.generateContent(prompt));
+            content = prompt;
         }
-        let text = result.response.text();
+        const completion = await withRetry(() => this.client.chat.completions.create({
+            model: OPENAI_MODEL,
+            messages: [{ role: "user", content }],
+        }));
+        let text = completion.choices[0]?.message?.content ?? "";
         // Strip markdown code fences if present
         text = text.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
         const parsed = parseFeedbackResponse(JSON.parse(text));
         // Store AI response in context table
         if (this.contextRepository && interviewId) {
-            await this.contextRepository.createContext(interviewId, parsed, "gemini-3-flash-preview");
+            await this.contextRepository.createContext(interviewId, parsed, OPENAI_MODEL);
         }
         return {
             output: parsed,
@@ -80,7 +88,7 @@ export class GeminiProvider {
         };
     }
     async chat(req) {
-        console.log(`[chat] Using model: gemini (gemini-3-flash-preview)`);
+        console.log(`[chat] Using model: openai (${OPENAI_MODEL})`);
         console.log(`[chat] Received message for interview ${req.interviewId}: "${req.message}"`);
         // Store user message
         if (this.messageRepository) {
@@ -113,8 +121,11 @@ export class GeminiProvider {
             console.log(`[chat] No context available, using raw message as prompt`);
         }
         // Call AI with the context-enriched prompt
-        const result = await withRetry(() => this.model.generateContent(prompt));
-        const reply = result.response.text();
+        const completion = await withRetry(() => this.client.chat.completions.create({
+            model: OPENAI_MODEL,
+            messages: [{ role: "user", content: prompt }],
+        }));
+        const reply = completion.choices[0]?.message?.content ?? "";
         console.log(`[chat] AI reply received (${reply.length} chars)`);
         // Store AI response
         let messageId;
@@ -128,11 +139,14 @@ export class GeminiProvider {
         };
     }
     async classify(message) {
-        console.log(`[classify] Using model: gemini (gemini-3-flash-preview)`);
+        console.log(`[classify] Using model: openai (${OPENAI_MODEL})`);
         const prompt = buildClassificationPrompt(message);
         try {
-            const result = await this.model.generateContent(prompt);
-            let text = result.response.text();
+            const completion = await this.client.chat.completions.create({
+                model: OPENAI_MODEL,
+                messages: [{ role: "user", content: prompt }],
+            });
+            let text = completion.choices[0]?.message?.content ?? "";
             // Strip markdown code fences if present
             text = text.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
             const parsed = JSON.parse(text);

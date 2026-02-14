@@ -64,3 +64,69 @@ Important Constraints:
 - Maintain a professional, neutral, and helpful tone.
 `;
 }
+export function buildClassificationPrompt(message) {
+    return `
+YOUR ROLE:
+You are a question classifier for an interview feedback assistant.
+
+Your task is to classify the user's question into exactly one of three categories based on how much context is needed to answer it.
+
+CATEGORIES:
+
+1. "global" — High-level questions about the interview overall.
+   Examples: "How did I do?", "What were my strengths?", "What's the hiring signal?", "Give me a summary."
+   These can be answered using only the structured interview feedback (title, summary, strengths, improvements, hiring signal, key observations).
+
+2. "targeted" — Questions about a specific aspect or theme already covered in the feedback.
+   Examples: "Can you elaborate on my communication skills?", "What do you mean by improvement X?", "Why did you rate me as lean hire?"
+   These can also be answered using only the structured interview feedback.
+
+3. "specific" — Questions that reference exact moments, quotes, exchanges, or details from the interview transcript itself.
+   Examples: "What did I say about database design?", "How was my answer to the sorting question?", "What happened when the interviewer asked about concurrency?"
+   These require the full interview transcript in addition to the feedback.
+
+INPUT:
+<USER_QUESTION>
+"${message}"
+</USER_QUESTION>
+
+OUTPUT:
+Return your response strictly as valid JSON with a single key "category".
+
+Schema:
+{
+  "category": "global" | "targeted" | "specific"
+}
+
+Do not include any explanation or text outside the JSON.
+`;
+}
+export function buildChatPrompt(message, context, transcript) {
+    const feedbackSection = `
+INTERVIEW FEEDBACK CONTEXT:
+${JSON.stringify(context.contextJson, null, 2)}
+`;
+    const transcriptSection = transcript
+        ? `
+FULL INTERVIEW TRANSCRIPT:
+<INTERVIEW_TRANSCRIPT>
+${transcript}
+</INTERVIEW_TRANSCRIPT>
+`
+        : "";
+    return `
+YOUR ROLE:
+You are a helpful interview coach assistant. The user has already received structured feedback on their interview and is now asking follow-up questions.
+
+Use the provided context to answer the user's question accurately and helpfully. Be specific, reference details from the feedback${transcript ? " and transcript" : ""}, and maintain a professional, encouraging tone.
+
+Do not hallucinate details that are not present in the provided context.
+If information is missing or unclear, say so explicitly.
+${feedbackSection}
+${transcriptSection}
+USER QUESTION:
+"${message}"
+
+Provide a clear, concise, and helpful answer.
+`;
+}
