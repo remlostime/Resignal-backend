@@ -2,7 +2,7 @@ export type Plan = "free" | "pro"
 
 export type Role = "user" | "ai"
 
-export type AIModel = "gemini-3-flash-preview" | "deepseek-chat"
+export type AIModel = "gemini-3-flash-preview" | "deepseek-chat" | "gpt-5.2"
 
 export interface User {
   id: string

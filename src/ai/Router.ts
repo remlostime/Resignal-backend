@@ -6,8 +6,12 @@ import { NeonInterviewRepository } from "../db/NeonInterviewRepository.js"
 import { NeonInterviewContextRepository } from "../db/NeonInterviewContextRepository.js"
 import { NeonInterviewMessageRepository } from "../db/NeonInterviewMessageRepository.js"
 
+export type ModelKey = "gemini" | "deepseek" | "openai"
+
+export const VALID_MODELS: ModelKey[] = ["gemini", "deepseek", "openai"]
+
 export class ModelRouter {
-  private providers: Record<string, AIProvider>
+  private providers: Record<ModelKey, AIProvider>
 
   constructor() {
     const interviewRepository = new NeonInterviewRepository()
@@ -21,9 +25,15 @@ export class ModelRouter {
     }
   }
 
-  getProvider(): AIProvider {
-    const defaultProvider = process.env.DEFAULT_MODEL || "gemini";
+  getProvider(model?: string): AIProvider {
+    const key = (model && VALID_MODELS.includes(model as ModelKey))
+      ? model as ModelKey
+      : (process.env.DEFAULT_MODEL || "gemini") as ModelKey;
 
-    return this.providers[defaultProvider];
+    const provider = this.providers[key];
+    if (!provider) {
+      throw new Error(`Unknown model provider: ${key}`);
+    }
+    return provider;
   }
 }

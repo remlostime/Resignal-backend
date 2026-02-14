@@ -38,10 +38,11 @@ const interviewRoutes: FastifyPluginAsync = async (server) => {
   const messageRepository: InterviewMessageRepository = new NeonInterviewMessageRepository();
 
   server.post("/", async (request, reply) => {
-    const { input, locale, image } = request.body as {
+    const { input, locale, image, model } = request.body as {
       input: string;
       locale: string;
       image?: { base64: string; mimeType: string };
+      model?: string;
     };
     const clientId = request.headers['x-client-id'] as string;
 
@@ -59,7 +60,7 @@ const interviewRoutes: FastifyPluginAsync = async (server) => {
       validatedImage = image;
     }
 
-    const provider = router.getProvider();
+    const provider = router.getProvider(model);
     const result = await provider.interview({ 
       input, 
       locale, 
