@@ -22,8 +22,11 @@
   },
   "homepage": "https://github.com/remlostime/Resignal-backend#readme",
   "dependencies": {
+    "@fastify/multipart": "^9.4.0",
     "@google/generative-ai": "^0.24.1",
     "@neondatabase/serverless": "^1.0.2",
+    "@upstash/qstash": "^2.9.0",
+    "@vercel/blob": "^2.2.0",
     "fastify": "^5.7.1",
     "openai": "^6.21.0",
     "vercel": "^50.9.5",

@@ -32,3 +32,32 @@ export interface InterviewContext {
   model: AIModel
   createdAt: Date
 }
+
+export type TranscriptionJobStatus = "pending" | "processing" | "completed" | "failed"
+
+export interface TranscriptionJob {
+  id: string
+  userId: string
+  status: TranscriptionJobStatus
+  transcript: string | null
+  segments: unknown | null
+  duration: number | null
+  totalChunks: number
+  completedChunks: number
+  errorMessage: string | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface TranscriptionChunk {
+  id: string
+  jobId: string
+  chunkIndex: number
+  blobUrl: string
+  status: TranscriptionJobStatus
+  transcript: string | null
+  segments: unknown | null
+  duration: number | null
+  errorMessage: string | null
+  createdAt: Date
+}
