@@ -33,6 +33,18 @@ export interface InterviewContext {
   createdAt: Date
 }
 
+export interface InterviewListItem {
+  id: string
+  title: string | null
+  summary: string | null
+  createdAt: Date
+}
+
+export interface PaginatedResult<T> {
+  items: T[]
+  total: number
+}
+
 export type TranscriptionJobStatus = "pending" | "processing" | "completed" | "failed"
 
 export interface TranscriptionJob {
