@@ -1,6 +1,6 @@
 import { neon } from "@neondatabase/serverless"
 import type { InterviewRepository } from "./InterviewRepository.js"
-import type { Interview } from "./types.js"
+import type { Interview, InterviewListItem, PaginatedResult } from "./types.js"
 
 interface InterviewRow {
   id: string
@@ -9,11 +9,27 @@ interface InterviewRow {
   created_at: string
 }
 
+interface InterviewListRow {
+  id: string
+  title: string | null
+  summary: string | null
+  created_at: string
+}
+
 function mapRowToInterview(row: InterviewRow): Interview {
   return {
     id: row.id,
     userId: row.user_id,
     transcript: row.transcript,
+    createdAt: new Date(row.created_at)
+  }
+}
+
+function mapRowToInterviewListItem(row: InterviewListRow): InterviewListItem {
+  return {
+    id: row.id,
+    title: row.title,
+    summary: row.summary,
     createdAt: new Date(row.created_at)
   }
 }
@@ -61,6 +77,35 @@ export class NeonInterviewRepository implements InterviewRepository {
     `
 
     return rows.map(row => mapRowToInterview(row as InterviewRow))
+  }
+
+  async getPaginatedInterviewsByUserId(userId: string, page: number, pageSize: number): Promise<PaginatedResult<InterviewListItem>> {
+    const offset = (page - 1) * pageSize
+
+    const [countRows, rows] = await Promise.all([
+      this.sql`
+        SELECT COUNT(*) AS total
+        FROM interviews
+        WHERE user_id = ${userId};
+      `,
+      this.sql`
+        SELECT i.id, i.created_at,
+               ic.context_json->>'title' AS title,
+               ic.context_json->>'summary' AS summary
+        FROM interviews i
+        LEFT JOIN interview_contexts ic ON i.id = ic.interview_id
+        WHERE i.user_id = ${userId}
+        ORDER BY i.created_at DESC
+        LIMIT ${pageSize} OFFSET ${offset};
+      `
+    ])
+
+    const total = parseInt(countRows[0]?.total as string, 10) || 0
+
+    return {
+      items: rows.map(row => mapRowToInterviewListItem(row as InterviewListRow)),
+      total
+    }
   }
 
   async deleteInterview(id: string): Promise<boolean> {
