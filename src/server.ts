@@ -45,6 +45,10 @@ const registerRoutes = async () => {
   await app.register(processChunkModule.default, { prefix: '/api/internal' });
   
   await app.register(neonPlugin, { prefix: '/db' });
+
+  // Legal pages (public HTML)
+  const legalModule = await import(join(__dirname, 'routes', 'legal.js'));
+  await app.register(legalModule.default);
 };
 
 // 立即注册路由
