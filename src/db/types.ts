@@ -6,9 +6,12 @@ export type AIModel = "gemini-3-flash-preview" | "deepseek-chat" | "gpt-5.2"
 
 export interface User {
   id: string
-  email: string
+  anonymousId: string
+  email: string | null
   plan: Plan
+  subscriptionExpiresAt: Date | null
   createdAt: Date
+  updatedAt: Date
 }
 
 export interface Interview {

@@ -1,19 +1,22 @@
 import { type FastifyPluginAsync } from 'fastify';
 import { ModelRouter } from "../../ai/Router.js";
 import { rateLimit } from "../../lib/rateLimit.js";
+import { sendError } from "../../lib/errors.js";
 import type { InterviewMessageRepository } from '../../db/InterviewMessageRepository.js';
 import { NeonInterviewMessageRepository } from '../../db/NeonInterviewMessageRepository.js';
 import type { InterviewRepository } from '../../db/InterviewRepository.js';
 import { NeonInterviewRepository } from '../../db/NeonInterviewRepository.js';
 import type { InterviewContextRepository } from '../../db/InterviewContextRepository.js';
 import { NeonInterviewContextRepository } from '../../db/NeonInterviewContextRepository.js';
+import type { UserRepository } from '../../db/UserRepository.js';
+import { NeonUserRepository } from '../../db/NeonUserRepository.js';
+import { buildAuthMiddleware } from '../../middleware/auth.js';
 import type { ImageAttachment, FeedbackResponse } from '../../ai/AIProvider.js';
 
 const ALLOWED_IMAGE_MIME_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
 const MAX_IMAGE_SIZE_BYTES = 3 * 1024 * 1024; // 3MB
 
 function validateImage(image: { base64: string; mimeType: string }): { valid: boolean; error?: string } {
-  // Validate mime type
   if (!ALLOWED_IMAGE_MIME_TYPES.includes(image.mimeType)) {
     return { 
       valid: false, 
@@ -21,7 +24,6 @@ function validateImage(image: { base64: string; mimeType: string }): { valid: bo
     };
   }
 
-  // Validate size (decode base64 to check actual size)
   try {
     const buffer = Buffer.from(image.base64, 'base64');
     if (buffer.length > MAX_IMAGE_SIZE_BYTES) {
@@ -46,41 +48,34 @@ const interviewRoutes: FastifyPluginAsync = async (server) => {
   const messageRepository: InterviewMessageRepository = new NeonInterviewMessageRepository();
   const interviewRepository: InterviewRepository = new NeonInterviewRepository();
   const interviewContextRepository: InterviewContextRepository = new NeonInterviewContextRepository();
+  const userRepository: UserRepository = new NeonUserRepository();
+  const { authenticate } = buildAuthMiddleware(userRepository);
 
-  server.get("/", async (request, reply) => {
-    const clientId = request.headers['x-client-id'] as string;
+  server.get("/", { preHandler: [authenticate] }, async (request, reply) => {
+    const userId = request.authenticatedUser.id;
 
-    if (!clientId) {
-      return reply.status(401).send({ error: 'Missing x-client-id header' });
+    if (!rateLimit(userId)) {
+      return sendError(reply, 429, "RATE_LIMITED", "Rate limit exceeded");
     }
 
-    if (!rateLimit(clientId)) {
-      return reply.status(429).send({ error: 'Rate limit exceeded' });
-    }
-
-    const { user_id, page: pageParam, page_size: pageSizeParam } = request.query as {
-      user_id?: string;
+    const { page: pageParam, page_size: pageSizeParam } = request.query as {
       page?: string;
       page_size?: string;
     };
-
-    if (!user_id) {
-      return reply.status(400).send({ error: 'Missing required query parameter: user_id' });
-    }
 
     const page = pageParam ? parseInt(pageParam, 10) : DEFAULT_PAGE;
     const pageSize = pageSizeParam ? parseInt(pageSizeParam, 10) : DEFAULT_PAGE_SIZE;
 
     if (isNaN(page) || page < 1) {
-      return reply.status(400).send({ error: 'page must be a positive integer' });
+      return sendError(reply, 400, "INVALID_INPUT", "page must be a positive integer");
     }
 
     if (isNaN(pageSize) || pageSize < 1 || pageSize > MAX_PAGE_SIZE) {
-      return reply.status(400).send({ error: `page_size must be between 1 and ${MAX_PAGE_SIZE}` });
+      return sendError(reply, 400, "INVALID_INPUT", `page_size must be between 1 and ${MAX_PAGE_SIZE}`);
     }
 
     try {
-      const result = await interviewRepository.getPaginatedInterviewsByUserId(user_id, page, pageSize);
+      const result = await interviewRepository.getPaginatedInterviewsByUserId(userId, page, pageSize);
       const totalPages = Math.ceil(result.total / pageSize);
 
       return {
@@ -99,32 +94,28 @@ const interviewRoutes: FastifyPluginAsync = async (server) => {
       };
     } catch (error) {
       server.log.error(error);
-      return reply.status(500).send({ error: 'Failed to fetch interviews' });
+      return sendError(reply, 500, "INTERNAL_ERROR", "Failed to fetch interviews");
     }
   });
 
-  server.get("/:id", async (request, reply) => {
-    const clientId = request.headers['x-client-id'] as string;
+  server.get("/:id", { preHandler: [authenticate] }, async (request, reply) => {
+    const userId = request.authenticatedUser.id;
 
-    if (!clientId) {
-      return reply.status(401).send({ error: 'Missing x-client-id header' });
-    }
-
-    if (!rateLimit(clientId)) {
-      return reply.status(429).send({ error: 'Rate limit exceeded' });
+    if (!rateLimit(userId)) {
+      return sendError(reply, 429, "RATE_LIMITED", "Rate limit exceeded");
     }
 
     const { id } = request.params as { id: string };
 
     if (!id) {
-      return reply.status(400).send({ error: 'Missing required parameter: id' });
+      return sendError(reply, 400, "INVALID_INPUT", "Missing required parameter: id");
     }
 
     try {
       const context = await interviewContextRepository.getContextByInterviewId(id);
 
       if (!context) {
-        return reply.status(404).send({ error: 'Interview not found' });
+        return sendError(reply, 404, "NOT_FOUND", "Interview not found");
       }
 
       const feedback = context.contextJson as FeedbackResponse;
@@ -140,32 +131,28 @@ const interviewRoutes: FastifyPluginAsync = async (server) => {
       };
     } catch (error) {
       server.log.error(error);
-      return reply.status(500).send({ error: 'Failed to fetch interview details' });
+      return sendError(reply, 500, "INTERNAL_ERROR", "Failed to fetch interview details");
     }
   });
 
-  server.get("/:id/transcript", async (request, reply) => {
-    const clientId = request.headers['x-client-id'] as string;
+  server.get("/:id/transcript", { preHandler: [authenticate] }, async (request, reply) => {
+    const userId = request.authenticatedUser.id;
 
-    if (!clientId) {
-      return reply.status(401).send({ error: 'Missing x-client-id header' });
-    }
-
-    if (!rateLimit(clientId)) {
-      return reply.status(429).send({ error: 'Rate limit exceeded' });
+    if (!rateLimit(userId)) {
+      return sendError(reply, 429, "RATE_LIMITED", "Rate limit exceeded");
     }
 
     const { id } = request.params as { id: string };
 
     if (!id) {
-      return reply.status(400).send({ error: 'Missing required parameter: id' });
+      return sendError(reply, 400, "INVALID_INPUT", "Missing required parameter: id");
     }
 
     try {
       const interview = await interviewRepository.getInterviewById(id);
 
       if (!interview) {
-        return reply.status(404).send({ error: 'Interview not found' });
+        return sendError(reply, 404, "NOT_FOUND", "Interview not found");
       }
 
       return {
@@ -174,29 +161,29 @@ const interviewRoutes: FastifyPluginAsync = async (server) => {
       };
     } catch (error) {
       server.log.error(error);
-      return reply.status(500).send({ error: 'Failed to fetch interview transcript' });
+      return sendError(reply, 500, "INTERNAL_ERROR", "Failed to fetch interview transcript");
     }
   });
 
-  server.post("/", async (request, reply) => {
+  server.post("/", { preHandler: [authenticate] }, async (request, reply) => {
+    const userId = request.authenticatedUser.id;
+
+    if (!rateLimit(userId)) {
+      return sendError(reply, 429, "RATE_LIMITED", "Rate limit exceeded");
+    }
+
     const { input, locale, image, model } = request.body as {
       input: string;
       locale: string;
       image?: { base64: string; mimeType: string };
       model?: string;
     };
-    const clientId = request.headers['x-client-id'] as string;
 
-    if (!clientId || !rateLimit(clientId)) {
-      return reply.status(429).send({ error: 'Rate limit exceeded' });
-    }
-
-    // Validate image if provided
     let validatedImage: ImageAttachment | undefined;
     if (image) {
       const validation = validateImage(image);
       if (!validation.valid) {
-        return reply.status(400).send({ error: validation.error });
+        return sendError(reply, 400, "INVALID_INPUT", validation.error!);
       }
       validatedImage = image;
     }
@@ -205,7 +192,7 @@ const interviewRoutes: FastifyPluginAsync = async (server) => {
     const result = await provider.interview({ 
       input, 
       locale, 
-      userId: clientId,
+      userId,
       image: validatedImage
     });
 
@@ -216,14 +203,11 @@ const interviewRoutes: FastifyPluginAsync = async (server) => {
     };
   });
 
-  // GET /:interviewId/messages - Load messages for a specific interview
-  server.get("/:interviewId/messages", async (request, reply) => {
+  server.get("/:interviewId/messages", { preHandler: [authenticate] }, async (request, reply) => {
     const { interviewId } = request.params as { interviewId: string };
 
     if (!interviewId) {
-      return reply.status(400).send({
-        error: 'Missing required parameter: interviewId'
-      });
+      return sendError(reply, 400, "INVALID_INPUT", "Missing required parameter: interviewId");
     }
 
     try {
@@ -235,9 +219,7 @@ const interviewRoutes: FastifyPluginAsync = async (server) => {
       };
     } catch (error) {
       server.log.error(error);
-      return reply.status(500).send({
-        error: 'Failed to load messages'
-      });
+      return sendError(reply, 500, "INTERNAL_ERROR", "Failed to load messages");
     }
   });
 };

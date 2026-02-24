@@ -3,40 +3,23 @@ import type { Plan, User } from "./types.js"
 
 export class MockUserRepository implements UserRepository {
   private users = new Map<string, User>()
+  private anonymousIndex = new Map<string, string>()
   private emailIndex = new Map<string, string>()
 
-  async createUser(email: string, plan: Plan = "free"): Promise<User | null> {
-    if (this.emailIndex.has(email)) {
-      return null
-    }
-
+  async createAnonymousUser(anonymousId: string): Promise<User> {
+    const now = new Date()
     const user: User = {
       id: crypto.randomUUID(),
-      email,
-      plan,
-      createdAt: new Date()
+      anonymousId,
+      email: null,
+      plan: "free",
+      subscriptionExpiresAt: null,
+      createdAt: now,
+      updatedAt: now,
     }
 
     this.users.set(user.id, user)
-    this.emailIndex.set(email, user.id)
-
-    return user
-  }
-
-  async createUserWithId(id: string, email: string, plan: Plan = "free"): Promise<User | null> {
-    if (this.emailIndex.has(email)) {
-      return null
-    }
-
-    const user: User = {
-      id,
-      email,
-      plan,
-      createdAt: new Date()
-    }
-
-    this.users.set(user.id, user)
-    this.emailIndex.set(email, user.id)
+    this.anonymousIndex.set(anonymousId, user.id)
 
     return user
   }
@@ -45,25 +28,46 @@ export class MockUserRepository implements UserRepository {
     return this.users.get(id) ?? null
   }
 
-  async getUserByEmail(email: string): Promise<User | null> {
-    const id = this.emailIndex.get(email)
-    if (!id) {
-      return null
-    }
+  async getUserByAnonymousId(anonymousId: string): Promise<User | null> {
+    const id = this.anonymousIndex.get(anonymousId)
+    if (!id) return null
     return this.users.get(id) ?? null
   }
 
-  // Helper method for testing - clears all data
+  async getUserByEmail(email: string): Promise<User | null> {
+    const id = this.emailIndex.get(email)
+    if (!id) return null
+    return this.users.get(id) ?? null
+  }
+
+  async updateSubscription(userId: string, plan: Plan, expiresAt: Date): Promise<User | null> {
+    const user = this.users.get(userId)
+    if (!user) return null
+
+    const updated: User = {
+      ...user,
+      plan,
+      subscriptionExpiresAt: expiresAt,
+      updatedAt: new Date(),
+    }
+
+    this.users.set(userId, updated)
+    return updated
+  }
+
   clear(): void {
     this.users.clear()
+    this.anonymousIndex.clear()
     this.emailIndex.clear()
   }
 
-  // Helper method for testing - seed with test data
   seed(users: User[]): void {
     for (const user of users) {
       this.users.set(user.id, user)
-      this.emailIndex.set(user.email, user.id)
+      this.anonymousIndex.set(user.anonymousId, user.id)
+      if (user.email) {
+        this.emailIndex.set(user.email, user.id)
+      }
     }
   }
 }
