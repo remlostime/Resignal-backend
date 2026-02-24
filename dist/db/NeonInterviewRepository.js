@@ -7,6 +7,14 @@ function mapRowToInterview(row) {
         createdAt: new Date(row.created_at)
     };
 }
+function mapRowToInterviewListItem(row) {
+    return {
+        id: row.id,
+        title: row.title,
+        summary: row.summary,
+        createdAt: new Date(row.created_at)
+    };
+}
 export class NeonInterviewRepository {
     sql;
     constructor(databaseUrl) {
@@ -41,6 +49,31 @@ export class NeonInterviewRepository {
       ORDER BY created_at DESC;
     `;
         return rows.map(row => mapRowToInterview(row));
+    }
+    async getPaginatedInterviewsByUserId(userId, page, pageSize) {
+        const offset = (page - 1) * pageSize;
+        const [countRows, rows] = await Promise.all([
+            this.sql `
+        SELECT COUNT(*) AS total
+        FROM interviews
+        WHERE user_id = ${userId};
+      `,
+            this.sql `
+        SELECT i.id, i.created_at,
+               ic.context_json->>'title' AS title,
+               ic.context_json->>'summary' AS summary
+        FROM interviews i
+        LEFT JOIN interview_contexts ic ON i.id = ic.interview_id
+        WHERE i.user_id = ${userId}
+        ORDER BY i.created_at DESC
+        LIMIT ${pageSize} OFFSET ${offset};
+      `
+        ]);
+        const total = parseInt(countRows[0]?.total, 10) || 0;
+        return {
+            items: rows.map(row => mapRowToInterviewListItem(row)),
+            total
+        };
     }
     async deleteInterview(id) {
         const rows = await this.sql `

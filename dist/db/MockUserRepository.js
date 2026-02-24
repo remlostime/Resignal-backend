@@ -1,54 +1,62 @@
 export class MockUserRepository {
     users = new Map();
+    anonymousIndex = new Map();
     emailIndex = new Map();
-    async createUser(email, plan = "free") {
-        if (this.emailIndex.has(email)) {
-            return null;
-        }
+    async createAnonymousUser(anonymousId) {
+        const now = new Date();
         const user = {
             id: crypto.randomUUID(),
-            email,
-            plan,
-            createdAt: new Date()
+            anonymousId,
+            email: null,
+            plan: "free",
+            subscriptionExpiresAt: null,
+            createdAt: now,
+            updatedAt: now,
         };
         this.users.set(user.id, user);
-        this.emailIndex.set(email, user.id);
-        return user;
-    }
-    async createUserWithId(id, email, plan = "free") {
-        if (this.emailIndex.has(email)) {
-            return null;
-        }
-        const user = {
-            id,
-            email,
-            plan,
-            createdAt: new Date()
-        };
-        this.users.set(user.id, user);
-        this.emailIndex.set(email, user.id);
+        this.anonymousIndex.set(anonymousId, user.id);
         return user;
     }
     async getUserById(id) {
         return this.users.get(id) ?? null;
     }
-    async getUserByEmail(email) {
-        const id = this.emailIndex.get(email);
-        if (!id) {
+    async getUserByAnonymousId(anonymousId) {
+        const id = this.anonymousIndex.get(anonymousId);
+        if (!id)
             return null;
-        }
         return this.users.get(id) ?? null;
     }
-    // Helper method for testing - clears all data
+    async getUserByEmail(email) {
+        const id = this.emailIndex.get(email);
+        if (!id)
+            return null;
+        return this.users.get(id) ?? null;
+    }
+    async updateSubscription(userId, plan, expiresAt) {
+        const user = this.users.get(userId);
+        if (!user)
+            return null;
+        const updated = {
+            ...user,
+            plan,
+            subscriptionExpiresAt: expiresAt,
+            updatedAt: new Date(),
+        };
+        this.users.set(userId, updated);
+        return updated;
+    }
     clear() {
         this.users.clear();
+        this.anonymousIndex.clear();
         this.emailIndex.clear();
     }
-    // Helper method for testing - seed with test data
     seed(users) {
         for (const user of users) {
             this.users.set(user.id, user);
-            this.emailIndex.set(user.email, user.id);
+            this.anonymousIndex.set(user.anonymousId, user.id);
+            if (user.email) {
+                this.emailIndex.set(user.email, user.id);
+            }
         }
     }
 }

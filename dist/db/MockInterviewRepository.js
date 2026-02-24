@@ -1,6 +1,7 @@
 export class MockInterviewRepository {
     interviews = new Map();
     userIndex = new Map();
+    contextData = new Map();
     async createInterview(userId, transcript) {
         const interview = {
             id: crypto.randomUUID(),
@@ -33,6 +34,24 @@ export class MockInterviewRepository {
         // Sort by createdAt descending
         return interviews.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     }
+    async getPaginatedInterviewsByUserId(userId, page, pageSize) {
+        const allInterviews = await this.getInterviewsByUserId(userId);
+        const total = allInterviews.length;
+        const offset = (page - 1) * pageSize;
+        const paged = allInterviews.slice(offset, offset + pageSize);
+        return {
+            items: paged.map(interview => {
+                const context = this.contextData.get(interview.id);
+                return {
+                    id: interview.id,
+                    title: context?.title ?? null,
+                    summary: context?.summary ?? null,
+                    createdAt: interview.createdAt
+                };
+            }),
+            total
+        };
+    }
     async deleteInterview(id) {
         const interview = this.interviews.get(id);
         if (!interview) {
@@ -50,6 +69,7 @@ export class MockInterviewRepository {
     clear() {
         this.interviews.clear();
         this.userIndex.clear();
+        this.contextData.clear();
     }
     // Helper method for testing - seed with test data
     seed(interviews) {
@@ -58,6 +78,11 @@ export class MockInterviewRepository {
             const userInterviews = this.userIndex.get(interview.userId) ?? new Set();
             userInterviews.add(interview.id);
             this.userIndex.set(interview.userId, userInterviews);
+        }
+    }
+    seedContextData(data) {
+        for (const [id, context] of data) {
+            this.contextData.set(id, context);
         }
     }
 }

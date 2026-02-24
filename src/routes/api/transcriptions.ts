@@ -1,68 +1,63 @@
 import { type FastifyPluginAsync } from "fastify"
 import { rateLimit } from "../../lib/rateLimit.js"
+import { sendError } from "../../lib/errors.js"
 import { TranscriptionService, ServiceError } from "../../services/TranscriptionService.js"
 import type { TranscriptionJobRepository } from "../../db/TranscriptionJobRepository.js"
 import { NeonTranscriptionJobRepository } from "../../db/NeonTranscriptionJobRepository.js"
+import type { UserRepository } from "../../db/UserRepository.js"
+import { NeonUserRepository } from "../../db/NeonUserRepository.js"
+import { buildAuthMiddleware } from "../../middleware/auth.js"
 
 const transcriptionRoutes: FastifyPluginAsync = async (server) => {
   const repository: TranscriptionJobRepository = new NeonTranscriptionJobRepository()
   const service = new TranscriptionService(repository)
+  const userRepository: UserRepository = new NeonUserRepository()
+  const { authenticate } = buildAuthMiddleware(userRepository)
 
-  // POST / — Create a new transcription job.
-  // Returns immediately with a jobId; no audio processing happens here.
-  server.post("/", async (request, reply) => {
-    const clientId = request.headers["x-client-id"] as string
-    if (!clientId) {
-      return reply.status(401).send({ error: "Missing x-client-id header" })
-    }
-    if (!rateLimit(clientId)) {
-      return reply.status(429).send({ error: "Rate limit exceeded" })
+  server.post("/", { preHandler: [authenticate] }, async (request, reply) => {
+    const userId = request.authenticatedUser.id
+
+    if (!rateLimit(userId)) {
+      return sendError(reply, 429, "RATE_LIMITED", "Rate limit exceeded")
     }
 
     const { totalChunks } = request.body as { totalChunks: number }
     if (!totalChunks || typeof totalChunks !== "number") {
-      return reply.status(400).send({ error: "totalChunks is required and must be a number" })
+      return sendError(reply, 400, "INVALID_INPUT", "totalChunks is required and must be a number")
     }
 
     try {
-      const job = await service.createJob(clientId, totalChunks)
+      const job = await service.createJob(userId, totalChunks)
       return { success: true, jobId: job.id, status: job.status }
     } catch (error) {
       return handleServiceError(error, reply)
     }
   })
 
-  // POST /:jobId/chunks — Upload one audio chunk (multipart/form-data).
-  // When the last chunk is uploaded, background processing is triggered
-  // via QStash so each chunk gets its own 60s serverless invocation.
-  server.post("/:jobId/chunks", async (request, reply) => {
-    const clientId = request.headers["x-client-id"] as string
-    if (!clientId) {
-      return reply.status(401).send({ error: "Missing x-client-id header" })
-    }
-
+  server.post("/:jobId/chunks", { preHandler: [authenticate] }, async (request, reply) => {
+    const userId = request.authenticatedUser.id
     const { jobId } = request.params as { jobId: string }
 
     const data = await request.file()
     if (!data) {
-      return reply.status(400).send({ error: "No file uploaded. Use field name 'audio'." })
+      return sendError(reply, 400, "INVALID_INPUT", "No file uploaded. Use field name 'audio'.")
     }
 
     const chunkIndexField = data.fields["chunkIndex"]
     if (!chunkIndexField || !("value" in chunkIndexField)) {
-      return reply.status(400).send({ error: "Missing chunkIndex field" })
+      return sendError(reply, 400, "INVALID_INPUT", "Missing chunkIndex field")
     }
 
     const chunkIndex = parseInt(chunkIndexField.value as string, 10)
     if (Number.isNaN(chunkIndex)) {
-      return reply.status(400).send({ error: "chunkIndex must be a number" })
+      return sendError(reply, 400, "INVALID_INPUT", "chunkIndex must be a number")
     }
 
     try {
       const audioBuffer = await data.toBuffer()
       const result = await service.uploadChunk(
         jobId,
-        clientId,
+        userId,
         chunkIndex,
         audioBuffer,
         data.filename,
@@ -79,18 +74,12 @@ const transcriptionRoutes: FastifyPluginAsync = async (server) => {
     }
   })
 
-  // GET /:jobId — Poll transcription job status.
-  // Client calls this repeatedly until status is "completed" or "failed".
-  server.get("/:jobId", async (request, reply) => {
-    const clientId = request.headers["x-client-id"] as string
-    if (!clientId) {
-      return reply.status(401).send({ error: "Missing x-client-id header" })
-    }
-
+  server.get("/:jobId", { preHandler: [authenticate] }, async (request, reply) => {
+    const userId = request.authenticatedUser.id
     const { jobId } = request.params as { jobId: string }
 
     try {
-      const job = await service.getJobStatus(jobId, clientId)
+      const job = await service.getJobStatus(jobId, userId)
       return {
         success: true,
         status: job.status,
@@ -108,7 +97,9 @@ const transcriptionRoutes: FastifyPluginAsync = async (server) => {
 
 function handleServiceError(error: unknown, reply: { status: (code: number) => { send: (body: unknown) => unknown } }) {
   if (error instanceof ServiceError) {
-    return reply.status(error.statusCode).send({ error: error.message })
+    return reply.status(error.statusCode).send({
+      error: { code: "SERVICE_ERROR", message: error.message },
+    })
   }
   throw error
 }
