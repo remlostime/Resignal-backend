@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from "fastify"
 import fjwt from "@fastify/jwt"
+import fp from "fastify-plugin"
 
 declare module "@fastify/jwt" {
   interface FastifyJWT {
@@ -23,4 +24,4 @@ const jwtPlugin: FastifyPluginAsync = async (server) => {
   })
 }
 
-export default jwtPlugin
+export default fp(jwtPlugin)
