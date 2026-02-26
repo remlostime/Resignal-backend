@@ -27,6 +27,11 @@ const authRoutes: FastifyPluginAsync = async (server) => {
       return sendError(reply, 400, "INVALID_INPUT", "anonymousId must be a valid UUID")
     }
 
+    const clientIp = request.headers["x-real-ip"] as string ?? request.ip
+    if (!rateLimit(clientIp, 20)) {
+      return sendError(reply, 429, "RATE_LIMITED", "Too many registration attempts, try again later")
+    }
+
     if (!rateLimit(anonymousId, 5)) {
       return sendError(reply, 429, "RATE_LIMITED", "Too many registration attempts, try again later")
     }
