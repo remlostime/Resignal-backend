@@ -1,7 +1,7 @@
 import type { FastifyPluginAsync } from "fastify"
 import type { UserRepository } from "../../db/UserRepository.js"
 import { NeonUserRepository } from "../../db/NeonUserRepository.js"
-import type { AppleReceiptVerifier } from "../../services/AppleReceiptService.js"
+import type { AppleTransactionVerifier } from "../../services/AppleReceiptService.js"
 import { AppleReceiptService } from "../../services/AppleReceiptService.js"
 import { buildAuthMiddleware } from "../../middleware/auth.js"
 import { rateLimit } from "../../lib/rateLimit.js"
@@ -9,7 +9,7 @@ import { sendError } from "../../lib/errors.js"
 
 const billingRoutes: FastifyPluginAsync = async (server) => {
   const userRepository: UserRepository = new NeonUserRepository()
-  const receiptVerifier: AppleReceiptVerifier = new AppleReceiptService()
+  const transactionVerifier: AppleTransactionVerifier = new AppleReceiptService()
   const { authenticate } = buildAuthMiddleware(userRepository)
 
   server.post("/verify", {
@@ -17,9 +17,9 @@ const billingRoutes: FastifyPluginAsync = async (server) => {
     schema: {
       body: {
         type: "object",
-        required: ["receiptData"],
+        required: ["signedTransaction"],
         properties: {
-          receiptData: { type: "string", minLength: 1 },
+          signedTransaction: { type: "string", minLength: 1 },
         },
         additionalProperties: false,
       },
@@ -31,13 +31,13 @@ const billingRoutes: FastifyPluginAsync = async (server) => {
       return sendError(reply, 429, "RATE_LIMITED", "Too many verification attempts, try again later")
     }
 
-    const { receiptData } = request.body as { receiptData: string }
+    const { signedTransaction } = request.body as { signedTransaction: string }
 
     try {
-      const result = await receiptVerifier.verify(receiptData)
+      const result = await transactionVerifier.verifyTransaction(signedTransaction)
 
       if (!result.isValid || !result.expiresAt) {
-        return sendError(reply, 400, "INVALID_RECEIPT", "Receipt is invalid or subscription has expired")
+        return sendError(reply, 400, "INVALID_RECEIPT", "Transaction is invalid or subscription has expired")
       }
 
       const updated = await userRepository.updateSubscription(user.id, "pro", result.expiresAt)
@@ -52,7 +52,7 @@ const billingRoutes: FastifyPluginAsync = async (server) => {
       }
     } catch (error) {
       server.log.error(error)
-      return sendError(reply, 500, "INTERNAL_ERROR", "Failed to verify receipt")
+      return sendError(reply, 500, "INTERNAL_ERROR", "Failed to verify transaction")
     }
   })
 }

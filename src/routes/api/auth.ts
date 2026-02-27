@@ -49,7 +49,7 @@ const authRoutes: FastifyPluginAsync = async (server) => {
         token,
         user: {
           id: user.id,
-          isPro: user.plan === "pro",
+          plan: user.plan,
         },
       }
     } catch (error) {
