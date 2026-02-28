@@ -9,8 +9,15 @@ import { sendError } from "../../lib/errors.js"
 
 const billingRoutes: FastifyPluginAsync = async (server) => {
   const userRepository: UserRepository = new NeonUserRepository()
-  const transactionVerifier: AppleTransactionVerifier = new AppleReceiptService()
   const { authenticate } = buildAuthMiddleware(userRepository)
+
+  let transactionVerifier: AppleTransactionVerifier | null = null
+  function getVerifier(): AppleTransactionVerifier {
+    if (!transactionVerifier) {
+      transactionVerifier = new AppleReceiptService()
+    }
+    return transactionVerifier
+  }
 
   server.post("/verify", {
     preHandler: [authenticate],
@@ -34,7 +41,7 @@ const billingRoutes: FastifyPluginAsync = async (server) => {
     const { signedTransaction } = request.body as { signedTransaction: string }
 
     try {
-      const result = await transactionVerifier.verifyTransaction(signedTransaction)
+      const result = await getVerifier().verifyTransaction(signedTransaction)
 
       if (!result.isValid || !result.expiresAt) {
         return sendError(reply, 400, "INVALID_RECEIPT", "Transaction is invalid or subscription has expired")
