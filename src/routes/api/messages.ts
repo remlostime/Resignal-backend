@@ -1,31 +1,43 @@
 import { type FastifyPluginAsync } from 'fastify';
 import { ModelRouter } from '../../ai/Router.js';
+import type { UserRepository } from '../../db/UserRepository.js';
+import { NeonUserRepository } from '../../db/NeonUserRepository.js';
+import { buildAuthMiddleware } from '../../middleware/auth.js';
+import { sendError } from '../../lib/errors.js';
 
 const messageRoutes: FastifyPluginAsync = async (server) => {
   const router = new ModelRouter();
+  const userRepository: UserRepository = new NeonUserRepository();
+  const { authenticate } = buildAuthMiddleware(userRepository);
 
-  // POST /api/messages - Send a message and get AI reply
-  server.post('/', async (request, reply) => {
-    const { interview_id, message, user_id, model } = request.body as {
+  server.post('/', {
+    preHandler: [authenticate],
+    schema: {
+      body: {
+        type: 'object',
+        required: ['interview_id', 'message'],
+        properties: {
+          interview_id: { type: 'string' },
+          message: { type: 'string' },
+          model: { type: 'string' },
+        },
+        additionalProperties: false,
+      },
+    },
+  }, async (request, reply) => {
+    const userId = request.authenticatedUser.id;
+    const { interview_id, message, model } = request.body as {
       interview_id: string;
       message: string;
-      user_id: string;
       model?: string;
     };
-
-    // Validate required fields
-    if (!interview_id || !message || !user_id) {
-      return reply.status(400).send({
-        error: 'Missing required fields: interview_id, message, and user_id are required'
-      });
-    }
 
     try {
       const provider = router.getProvider(model);
       const result = await provider.chat({
         interviewId: interview_id,
         message,
-        userId: user_id
+        userId,
       });
 
       return {
@@ -35,9 +47,7 @@ const messageRoutes: FastifyPluginAsync = async (server) => {
       };
     } catch (error) {
       server.log.error(error);
-      return reply.status(500).send({
-        error: 'Failed to process message'
-      });
+      return sendError(reply, 500, "INTERNAL_ERROR", "Failed to process message");
     }
   });
 };

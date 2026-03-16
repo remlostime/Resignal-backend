@@ -18,30 +18,22 @@ const neonPlugin: FastifyPluginAsync = async (server) => {
     return { db: 'up', neonNow: result.t };
   });
 
-  server.post('/user', async (_request, reply) => {
-    const randomEmail = `user-${Date.now()}@example.com`;
-
-    const user = await userRepository.createUser(randomEmail);
-
-    if (!user) {
-      return reply.status(409).send({ message: 'already exists' });
-    }
-    return user;
+  server.post('/user', async () => {
+    const anonymousId = crypto.randomUUID();
+    return await userRepository.createAnonymousUser(anonymousId);
   });
 
   server.post('/interview', async () => {
-    // Create a user first, then create interview for that user
-    const user = await userRepository.createUser(`user-${Date.now()}@example.com`);
+    const user = await userRepository.createAnonymousUser(crypto.randomUUID());
     const transcript = `Sample interview transcript at ${new Date().toISOString()}`;
 
-    return await interviewRepository.createInterview(user!.id, transcript);
+    return await interviewRepository.createInterview(user.id, transcript);
   });
 
   server.post('/message', async () => {
-    // Create a user, then interview, then message
-    const user = await userRepository.createUser(`user-${Date.now()}@example.com`);
+    const user = await userRepository.createAnonymousUser(crypto.randomUUID());
     const transcript = `Sample interview transcript at ${new Date().toISOString()}`;
-    const interview = await interviewRepository.createInterview(user!.id, transcript);
+    const interview = await interviewRepository.createInterview(user.id, transcript);
     
     const role = Math.random() > 0.5 ? 'user' : 'ai';
     const content = `${role === 'user' ? 'User' : 'AI'} message at ${new Date().toISOString()}`;
@@ -50,10 +42,9 @@ const neonPlugin: FastifyPluginAsync = async (server) => {
   });
 
   server.post('/context', async () => {
-    // Create a user, then interview, then context
-    const user = await userRepository.createUser(`user-${Date.now()}@example.com`);
+    const user = await userRepository.createAnonymousUser(crypto.randomUUID());
     const transcript = `Sample interview transcript at ${new Date().toISOString()}`;
-    const interview = await interviewRepository.createInterview(user!.id, transcript);
+    const interview = await interviewRepository.createInterview(user.id, transcript);
     
     const contextJson = {
       question: "Tell me about yourself",

@@ -22,12 +22,15 @@
   },
   "homepage": "https://github.com/remlostime/Resignal-backend#readme",
   "dependencies": {
+    "@apple/app-store-server-library": "^2.0.0",
+    "@fastify/jwt": "^10.0.0",
     "@fastify/multipart": "^9.4.0",
     "@google/generative-ai": "^0.24.1",
     "@neondatabase/serverless": "^1.0.2",
     "@upstash/qstash": "^2.9.0",
     "@vercel/blob": "^2.2.0",
     "fastify": "^5.7.1",
+    "fastify-plugin": "^5.1.0",
     "openai": "^6.21.0",
     "vercel": "^50.9.5",
     "zod": "^3.24.0"
