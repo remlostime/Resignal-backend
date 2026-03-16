@@ -1,12 +1,17 @@
 import fastify from 'fastify';
+import multipart from '@fastify/multipart';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import neonPlugin from './plugins/neon.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
-// 创建 Fastify 实例
 const app = fastify({
     logger: true,
-    bodyLimit: 5 * 1024 * 1024 // 5MB limit to accommodate 3MB images + base64 overhead
+    bodyLimit: 5 * 1024 * 1024
+});
+await app.register(multipart, {
+    limits: {
+        fileSize: 25 * 1024 * 1024, // 25MB — OpenAI Whisper per-file limit
+    },
 });
 // 注册路由
 const registerRoutes = async () => {
@@ -23,6 +28,12 @@ const registerRoutes = async () => {
     // Message 路由
     const messagesModule = await import(join(__dirname, 'routes', 'api', 'messages.js'));
     await app.register(messagesModule.default, { prefix: '/api/messages' });
+    // Transcription 路由
+    const transcriptionsModule = await import(join(__dirname, 'routes', 'api', 'transcriptions.js'));
+    await app.register(transcriptionsModule.default, { prefix: '/api/transcriptions' });
+    // Internal webhook 路由 (QStash)
+    const processChunkModule = await import(join(__dirname, 'routes', 'api', 'internal', 'processTranscriptionChunk.js'));
+    await app.register(processChunkModule.default, { prefix: '/api/internal' });
     await app.register(neonPlugin, { prefix: '/db' });
 };
 // 立即注册路由
