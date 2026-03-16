@@ -69,6 +69,7 @@ export class GeminiProvider implements AIProvider {
   }
 
   async interview(req: AIRequest): Promise<AIResponse> {
+    console.log(`[interview] Using model: gemini (gemini-3-flash-preview)`)
     // Create interview record before calling AI
     let interviewId: string | undefined
     if (this.interviewRepository) {
@@ -109,6 +110,7 @@ export class GeminiProvider implements AIProvider {
   }
 
   async chat(req: ChatRequest): Promise<ChatResponse> {
+    console.log(`[chat] Using model: gemini (gemini-3-flash-preview)`)
     console.log(`[chat] Received message for interview ${req.interviewId}: "${req.message}"`)
 
     // Store user message
@@ -164,6 +166,7 @@ export class GeminiProvider implements AIProvider {
   }
 
   async classify(message: string): Promise<QuestionCategory> {
+    console.log(`[classify] Using model: gemini (gemini-3-flash-preview)`)
     const prompt = buildClassificationPrompt(message)
 
     try {

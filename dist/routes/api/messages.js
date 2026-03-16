@@ -4,7 +4,7 @@ const messageRoutes = async (server) => {
     const router = new ModelRouter();
     // POST /api/messages - Send a message and get AI reply
     server.post('/', async (request, reply) => {
-        const { interview_id, message, user_id } = request.body;
+        const { interview_id, message, user_id, model } = request.body;
         // Validate required fields
         if (!interview_id || !message || !user_id) {
             return reply.status(400).send({
@@ -12,7 +12,7 @@ const messageRoutes = async (server) => {
             });
         }
         try {
-            const provider = router.getProvider();
+            const provider = router.getProvider(model);
             const result = await provider.chat({
                 interviewId: interview_id,
                 message,

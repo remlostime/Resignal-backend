@@ -31,7 +31,7 @@ const interviewRoutes = async (server) => {
     const router = new ModelRouter();
     const messageRepository = new NeonInterviewMessageRepository();
     server.post("/", async (request, reply) => {
-        const { input, locale, image } = request.body;
+        const { input, locale, image, model } = request.body;
         const clientId = request.headers['x-client-id'];
         if (!clientId || !rateLimit(clientId)) {
             return reply.status(429).send({ error: 'Rate limit exceeded' });
@@ -45,7 +45,7 @@ const interviewRoutes = async (server) => {
             }
             validatedImage = image;
         }
-        const provider = router.getProvider();
+        const provider = router.getProvider(model);
         const result = await provider.interview({
             input,
             locale,

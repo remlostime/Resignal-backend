@@ -6,10 +6,11 @@ const messageRoutes: FastifyPluginAsync = async (server) => {
 
   // POST /api/messages - Send a message and get AI reply
   server.post('/', async (request, reply) => {
-    const { interview_id, message, user_id } = request.body as {
+    const { interview_id, message, user_id, model } = request.body as {
       interview_id: string;
       message: string;
       user_id: string;
+      model?: string;
     };
 
     // Validate required fields
@@ -20,7 +21,7 @@ const messageRoutes: FastifyPluginAsync = async (server) => {
     }
 
     try {
-      const provider = router.getProvider();
+      const provider = router.getProvider(model);
       const result = await provider.chat({
         interviewId: interview_id,
         message,

@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env.development.local' });
-dotenv.config({ path: '.env.local' });  // 明确指定文件
+dotenv.config({ path: '.env.local', override: true });  // .env.local overrides development defaults
 
 const { app } = await import('./server.js');
 

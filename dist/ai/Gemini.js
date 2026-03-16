@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { buildPrompt } from "../prompt/prompt.js";
+import { buildPrompt, buildClassificationPrompt, buildChatPrompt } from "../prompt/prompt.js";
 import { parseFeedbackResponse } from "./responseValidator.js";
 const MAX_RETRIES = 3;
 const INITIAL_DELAY_MS = 1000;
@@ -27,6 +27,8 @@ async function withRetry(fn, maxRetries = MAX_RETRIES, initialDelay = INITIAL_DE
     }
     throw lastError;
 }
+const VALID_CATEGORIES = ["global", "targeted", "specific"];
+const DEFAULT_CATEGORY = "specific";
 export class GeminiProvider {
     name = "gemini";
     model;
@@ -43,6 +45,7 @@ export class GeminiProvider {
         this.messageRepository = messageRepository;
     }
     async interview(req) {
+        console.log(`[interview] Using model: gemini (gemini-3-flash-preview)`);
         // Create interview record before calling AI
         let interviewId;
         if (this.interviewRepository) {
@@ -77,13 +80,42 @@ export class GeminiProvider {
         };
     }
     async chat(req) {
+        console.log(`[chat] Using model: gemini (gemini-3-flash-preview)`);
+        console.log(`[chat] Received message for interview ${req.interviewId}: "${req.message}"`);
         // Store user message
         if (this.messageRepository) {
             await this.messageRepository.createMessage(req.interviewId, "user", req.message);
         }
-        // Call AI with the message
-        const result = await withRetry(() => this.model.generateContent(req.message));
+        // Classify the question to determine context needs
+        const category = await this.classify(req.message);
+        console.log(`[chat] Question classified as "${category}" for: "${req.message}"`);
+        // Fetch interview context (needed for all categories)
+        const interviewContext = this.contextRepository
+            ? await this.contextRepository.getContextByInterviewId(req.interviewId)
+            : null;
+        console.log(`[chat] Interview context ${interviewContext ? "found" : "not found"} for interview ${req.interviewId}`);
+        // For "specific" questions, also fetch the full transcript
+        let transcript;
+        if (category === "specific" && this.interviewRepository) {
+            const interview = await this.interviewRepository.getInterviewById(req.interviewId);
+            transcript = interview?.transcript;
+            console.log(`[chat] Transcript ${transcript ? `loaded (${transcript.length} chars)` : "not found"} for specific question`);
+        }
+        // Build the enriched prompt with appropriate context
+        let prompt;
+        if (interviewContext) {
+            prompt = buildChatPrompt(req.message, interviewContext, transcript);
+            console.log(`[chat] Built enriched prompt with context${transcript ? " + transcript" : ""} (${prompt.length} chars)`);
+        }
+        else {
+            // Fallback: send raw message if no context is available
+            prompt = req.message;
+            console.log(`[chat] No context available, using raw message as prompt`);
+        }
+        // Call AI with the context-enriched prompt
+        const result = await withRetry(() => this.model.generateContent(prompt));
         const reply = result.response.text();
+        console.log(`[chat] AI reply received (${reply.length} chars)`);
         // Store AI response
         let messageId;
         if (this.messageRepository) {
@@ -94,5 +126,26 @@ export class GeminiProvider {
             reply,
             messageId
         };
+    }
+    async classify(message) {
+        console.log(`[classify] Using model: gemini (gemini-3-flash-preview)`);
+        const prompt = buildClassificationPrompt(message);
+        try {
+            const result = await this.model.generateContent(prompt);
+            let text = result.response.text();
+            // Strip markdown code fences if present
+            text = text.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+            const parsed = JSON.parse(text);
+            const category = parsed.category;
+            if (VALID_CATEGORIES.includes(category)) {
+                return category;
+            }
+            console.warn(`Invalid classification category "${category}", falling back to "${DEFAULT_CATEGORY}"`);
+            return DEFAULT_CATEGORY;
+        }
+        catch (error) {
+            console.error("Question classification failed, falling back to default:", error);
+            return DEFAULT_CATEGORY;
+        }
     }
 }
