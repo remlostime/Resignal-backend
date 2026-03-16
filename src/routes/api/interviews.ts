@@ -5,7 +5,9 @@ import type { InterviewMessageRepository } from '../../db/InterviewMessageReposi
 import { NeonInterviewMessageRepository } from '../../db/NeonInterviewMessageRepository.js';
 import type { InterviewRepository } from '../../db/InterviewRepository.js';
 import { NeonInterviewRepository } from '../../db/NeonInterviewRepository.js';
-import type { ImageAttachment } from '../../ai/AIProvider.js';
+import type { InterviewContextRepository } from '../../db/InterviewContextRepository.js';
+import { NeonInterviewContextRepository } from '../../db/NeonInterviewContextRepository.js';
+import type { ImageAttachment, FeedbackResponse } from '../../ai/AIProvider.js';
 
 const ALLOWED_IMAGE_MIME_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
 const MAX_IMAGE_SIZE_BYTES = 3 * 1024 * 1024; // 3MB
@@ -43,6 +45,7 @@ const interviewRoutes: FastifyPluginAsync = async (server) => {
   const router = new ModelRouter();
   const messageRepository: InterviewMessageRepository = new NeonInterviewMessageRepository();
   const interviewRepository: InterviewRepository = new NeonInterviewRepository();
+  const interviewContextRepository: InterviewContextRepository = new NeonInterviewContextRepository();
 
   server.get("/", async (request, reply) => {
     const clientId = request.headers['x-client-id'] as string;
@@ -97,6 +100,81 @@ const interviewRoutes: FastifyPluginAsync = async (server) => {
     } catch (error) {
       server.log.error(error);
       return reply.status(500).send({ error: 'Failed to fetch interviews' });
+    }
+  });
+
+  server.get("/:id", async (request, reply) => {
+    const clientId = request.headers['x-client-id'] as string;
+
+    if (!clientId) {
+      return reply.status(401).send({ error: 'Missing x-client-id header' });
+    }
+
+    if (!rateLimit(clientId)) {
+      return reply.status(429).send({ error: 'Rate limit exceeded' });
+    }
+
+    const { id } = request.params as { id: string };
+
+    if (!id) {
+      return reply.status(400).send({ error: 'Missing required parameter: id' });
+    }
+
+    try {
+      const context = await interviewContextRepository.getContextByInterviewId(id);
+
+      if (!context) {
+        return reply.status(404).send({ error: 'Interview not found' });
+      }
+
+      const feedback = context.contextJson as FeedbackResponse;
+
+      return {
+        id: context.interviewId,
+        title: feedback.title,
+        summary: feedback.summary,
+        strengths: feedback.strengths,
+        improvement: feedback.improvement,
+        hiring_signal: feedback.hiring_signal,
+        key_observations: feedback.key_observations
+      };
+    } catch (error) {
+      server.log.error(error);
+      return reply.status(500).send({ error: 'Failed to fetch interview details' });
+    }
+  });
+
+  server.get("/:id/transcript", async (request, reply) => {
+    const clientId = request.headers['x-client-id'] as string;
+
+    if (!clientId) {
+      return reply.status(401).send({ error: 'Missing x-client-id header' });
+    }
+
+    if (!rateLimit(clientId)) {
+      return reply.status(429).send({ error: 'Rate limit exceeded' });
+    }
+
+    const { id } = request.params as { id: string };
+
+    if (!id) {
+      return reply.status(400).send({ error: 'Missing required parameter: id' });
+    }
+
+    try {
+      const interview = await interviewRepository.getInterviewById(id);
+
+      if (!interview) {
+        return reply.status(404).send({ error: 'Interview not found' });
+      }
+
+      return {
+        id: interview.id,
+        transcript: interview.transcript
+      };
+    } catch (error) {
+      server.log.error(error);
+      return reply.status(500).send({ error: 'Failed to fetch interview transcript' });
     }
   });
 
