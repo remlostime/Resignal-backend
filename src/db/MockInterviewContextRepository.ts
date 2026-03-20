@@ -30,6 +30,10 @@ export class MockInterviewContextRepository implements InterviewContextRepositor
     }
   }
 
+  async deleteByInterviewId(interviewId: string): Promise<void> {
+    this.contexts.delete(interviewId)
+  }
+
   // Helper method for testing - clears all data
   clear(): void {
     this.contexts.clear()

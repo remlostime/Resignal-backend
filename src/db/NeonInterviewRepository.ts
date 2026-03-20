@@ -108,10 +108,10 @@ export class NeonInterviewRepository implements InterviewRepository {
     }
   }
 
-  async deleteInterview(id: string): Promise<boolean> {
+  async deleteInterview(id: string, userId: string): Promise<boolean> {
     const rows = await this.sql`
       DELETE FROM interviews
-      WHERE id = ${id}
+      WHERE id = ${id} AND user_id = ${userId}
       RETURNING id;
     `
 

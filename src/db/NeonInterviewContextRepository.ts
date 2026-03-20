@@ -52,4 +52,11 @@ export class NeonInterviewContextRepository implements InterviewContextRepositor
 
     return mapRowToInterviewContext(rows[0] as InterviewContextRow)
   }
+
+  async deleteByInterviewId(interviewId: string): Promise<void> {
+    await this.sql`
+      DELETE FROM interview_contexts
+      WHERE interview_id = ${interviewId};
+    `
+  }
 }

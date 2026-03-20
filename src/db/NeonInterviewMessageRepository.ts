@@ -64,4 +64,11 @@ export class NeonInterviewMessageRepository implements InterviewMessageRepositor
 
     return rows.map(row => mapRowToInterviewMessage(row as InterviewMessageRow))
   }
+
+  async deleteByInterviewId(interviewId: string): Promise<void> {
+    await this.sql`
+      DELETE FROM interview_messages
+      WHERE interview_id = ${interviewId};
+    `
+  }
 }

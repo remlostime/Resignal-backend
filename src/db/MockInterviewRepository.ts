@@ -66,15 +66,14 @@ export class MockInterviewRepository implements InterviewRepository {
     }
   }
 
-  async deleteInterview(id: string): Promise<boolean> {
+  async deleteInterview(id: string, userId: string): Promise<boolean> {
     const interview = this.interviews.get(id)
-    if (!interview) {
+    if (!interview || interview.userId !== userId) {
       return false
     }
 
     this.interviews.delete(id)
 
-    // Update user index
     const userInterviews = this.userIndex.get(interview.userId)
     if (userInterviews) {
       userInterviews.delete(id)
