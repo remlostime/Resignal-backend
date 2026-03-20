@@ -57,6 +57,7 @@ export interface TranscriptionJob {
   transcript: string | null
   segments: unknown | null
   duration: number | null
+  resultUrl: string | null
   totalChunks: number
   completedChunks: number
   errorMessage: string | null

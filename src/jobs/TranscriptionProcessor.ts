@@ -1,5 +1,5 @@
 import { OpenAI } from "openai"
-import { del } from "@vercel/blob"
+import { del, put } from "@vercel/blob"
 import type { TranscriptionJobRepository } from "../db/TranscriptionJobRepository.js"
 
 interface WhisperSegment {
@@ -10,10 +10,21 @@ interface WhisperSegment {
   text: string
 }
 
+interface StrippedSegment {
+  id: number
+  start: number
+  end: number
+  text: string
+}
+
 interface WhisperVerboseResponse {
   text: string
   segments: WhisperSegment[]
   duration: number
+}
+
+function stripSegment(seg: WhisperSegment): StrippedSegment {
+  return { id: seg.id, start: seg.start, end: seg.end, text: seg.text }
 }
 
 const MAX_WHISPER_RETRIES = 1
@@ -40,10 +51,12 @@ export class TranscriptionProcessor {
       const filename = this.extractFilename(chunk.blobUrl)
       const result = await this.callWhisper(audioBuffer, filename)
 
+      const strippedSegments = result.segments.map(stripSegment)
+
       await this.repository.updateChunkResult(
         chunk.id,
         result.text,
-        result.segments,
+        strippedSegments,
         result.duration,
       )
 
@@ -70,7 +83,7 @@ export class TranscriptionProcessor {
     const chunks = await this.repository.getChunksByJobId(jobId)
 
     let combinedText = ""
-    const combinedSegments: WhisperSegment[] = []
+    const combinedSegments: StrippedSegment[] = []
     let totalDuration = 0
     let timeOffset = 0
 
@@ -89,7 +102,7 @@ export class TranscriptionProcessor {
       }
       combinedText += chunk.transcript
 
-      const segments = (chunk.segments ?? []) as WhisperSegment[]
+      const segments = (chunk.segments ?? []) as StrippedSegment[]
       for (const seg of segments) {
         combinedSegments.push({
           ...seg,
@@ -103,12 +116,19 @@ export class TranscriptionProcessor {
       totalDuration += chunkDuration
     }
 
-    await this.repository.updateJobResult(
-      jobId,
-      combinedText,
-      combinedSegments,
-      totalDuration,
+    const resultPayload = JSON.stringify({
+      transcript: combinedText,
+      segments: combinedSegments,
+      duration: totalDuration,
+    })
+
+    const blob = await put(
+      `transcriptions/${jobId}/result.json`,
+      resultPayload,
+      { access: "public", contentType: "application/json" },
     )
+
+    await this.repository.updateJobResultUrl(jobId, blob.url, totalDuration)
   }
 
   private async callWhisper(audioBuffer: Buffer, filename: string): Promise<WhisperVerboseResponse> {

@@ -83,8 +83,7 @@ const transcriptionRoutes: FastifyPluginAsync = async (server) => {
       return {
         success: true,
         status: job.status,
-        transcript: job.transcript,
-        segments: job.segments,
+        resultUrl: job.resultUrl,
         duration: job.duration,
         completedChunks: job.completedChunks,
         totalChunks: job.totalChunks,
