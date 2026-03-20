@@ -6,6 +6,7 @@ export interface TranscriptionJobRepository {
   getJobByIdAndUserId(id: string, userId: string): Promise<TranscriptionJob | null>
   updateJobStatus(id: string, status: string, errorMessage?: string): Promise<void>
   updateJobResult(id: string, transcript: string, segments: unknown, duration: number): Promise<void>
+  updateJobResultUrl(id: string, resultUrl: string, duration: number): Promise<void>
   incrementCompletedChunks(id: string): Promise<number>
 
   createChunk(jobId: string, chunkIndex: number, blobUrl: string): Promise<TranscriptionChunk>

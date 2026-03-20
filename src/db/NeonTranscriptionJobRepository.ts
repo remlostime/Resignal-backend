@@ -9,6 +9,7 @@ interface JobRow {
   transcript: string | null
   segments: unknown | null
   duration: number | null
+  result_url: string | null
   total_chunks: number
   completed_chunks: number
   error_message: string | null
@@ -37,6 +38,7 @@ function mapRowToJob(row: JobRow): TranscriptionJob {
     transcript: row.transcript,
     segments: row.segments,
     duration: row.duration,
+    resultUrl: row.result_url,
     totalChunks: row.total_chunks,
     completedChunks: row.completed_chunks,
     errorMessage: row.error_message,
@@ -110,6 +112,15 @@ export class NeonTranscriptionJobRepository implements TranscriptionJobRepositor
       UPDATE transcription_jobs
       SET status = 'completed', transcript = ${transcript}, segments = ${segmentsJson}::jsonb,
           duration = ${duration}, updated_at = ${now}
+      WHERE id = ${id};
+    `
+  }
+
+  async updateJobResultUrl(id: string, resultUrl: string, duration: number): Promise<void> {
+    const now = new Date().toISOString()
+    await this.sql`
+      UPDATE transcription_jobs
+      SET status = 'completed', result_url = ${resultUrl}, duration = ${duration}, updated_at = ${now}
       WHERE id = ${id};
     `
   }
