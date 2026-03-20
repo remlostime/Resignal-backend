@@ -46,6 +46,16 @@ export class MockInterviewMessageRepository implements InterviewMessageRepositor
     return messages.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
   }
 
+  async deleteByInterviewId(interviewId: string): Promise<void> {
+    const messageIds = this.interviewIndex.get(interviewId)
+    if (messageIds) {
+      for (const id of messageIds) {
+        this.messages.delete(id)
+      }
+      this.interviewIndex.delete(interviewId)
+    }
+  }
+
   // Helper method for testing - clears all data
   clear(): void {
     this.messages.clear()

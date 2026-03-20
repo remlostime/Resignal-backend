@@ -5,5 +5,5 @@ export interface InterviewRepository {
   getInterviewById(id: string): Promise<Interview | null>
   getInterviewsByUserId(userId: string): Promise<Interview[]>
   getPaginatedInterviewsByUserId(userId: string, page: number, pageSize: number): Promise<PaginatedResult<InterviewListItem>>
-  deleteInterview(id: string): Promise<boolean>
+  deleteInterview(id: string, userId: string): Promise<boolean>
 }

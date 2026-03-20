@@ -203,6 +203,36 @@ const interviewRoutes: FastifyPluginAsync = async (server) => {
     };
   });
 
+  server.delete("/:id", { preHandler: [authenticate] }, async (request, reply) => {
+    const userId = request.authenticatedUser.id;
+
+    if (!rateLimit(userId)) {
+      return sendError(reply, 429, "RATE_LIMITED", "Rate limit exceeded");
+    }
+
+    const { id } = request.params as { id: string };
+
+    if (!id) {
+      return sendError(reply, 400, "INVALID_INPUT", "Missing required parameter: id");
+    }
+
+    try {
+      await messageRepository.deleteByInterviewId(id);
+      await interviewContextRepository.deleteByInterviewId(id);
+
+      const deleted = await interviewRepository.deleteInterview(id, userId);
+
+      if (!deleted) {
+        return sendError(reply, 404, "NOT_FOUND", "Interview not found");
+      }
+
+      return { success: true };
+    } catch (error) {
+      server.log.error(error);
+      return sendError(reply, 500, "INTERNAL_ERROR", "Failed to delete interview");
+    }
+  });
+
   server.get("/:interviewId/messages", { preHandler: [authenticate] }, async (request, reply) => {
     const { interviewId } = request.params as { interviewId: string };
 
